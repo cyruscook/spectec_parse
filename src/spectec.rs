@@ -1,10 +1,10 @@
-use spectec_derive::SpecTecItem;
+use spectec_derive::SpecTecNode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L216>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SpecTecNode, Debug, PartialEq)]
 pub enum SpecTecDef {
-    #[spectec_item(name = "typ")]
+    #[spectec_node(name = "typ")]
     Typ {
         id: String,
         #[spectec_field(vec = true)]
@@ -12,35 +12,35 @@ pub enum SpecTecDef {
         #[spectec_field(vec = true)]
         insts: Vec<SpecTestInst>,
     },
-    #[spectec_item(name = "rel")]
+    #[spectec_node(name = "rel")]
     Rel,
-    #[spectec_item(name = "def")]
+    #[spectec_node(name = "def")]
     Def,
-    #[spectec_item(name = "gram")]
+    #[spectec_node(name = "gram")]
     Gram,
-    #[spectec_item(name = "rec")]
+    #[spectec_node(name = "rec")]
     Rec,
 }
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L189>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SpecTecNode, Debug, PartialEq)]
 pub enum SpecTestParam {
-    #[spectec_item(name = "exp")]
+    #[spectec_node(name = "exp")]
     Exp,
-    #[spectec_item(name = "typ")]
+    #[spectec_node(name = "typ")]
     Typ,
-    #[spectec_item(name = "def")]
+    #[spectec_node(name = "def")]
     Def,
-    #[spectec_item(name = "gram")]
+    #[spectec_node(name = "gram")]
     Gram,
 }
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L196>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SpecTecNode, Debug, PartialEq)]
 pub enum SpecTestInst {
-    #[spectec_item(name = "inst")]
+    #[spectec_node(name = "inst")]
     Inst {
         #[spectec_field(vec = true)]
         bindings: Vec<SpecTestBind>,
@@ -53,29 +53,29 @@ pub enum SpecTestInst {
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#182>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SpecTecNode, Debug, PartialEq)]
 pub enum SpecTestBind {
-    #[spectec_item(name = "exp")]
+    #[spectec_node(name = "exp")]
     Exp,
-    #[spectec_item(name = "typ")]
+    #[spectec_node(name = "typ")]
     Typ,
-    #[spectec_item(name = "def")]
+    #[spectec_node(name = "def")]
     Def,
-    #[spectec_item(name = "gram")]
+    #[spectec_node(name = "gram")]
     Gram,
 }
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#175>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SpecTecNode, Debug, PartialEq)]
 pub enum SpecTestArg {
-    #[spectec_item(name = "exp")]
+    #[spectec_node(name = "exp")]
     Exp,
-    #[spectec_item(name = "typ")]
+    #[spectec_node(name = "typ")]
     Typ,
-    #[spectec_item(name = "def")]
+    #[spectec_node(name = "def")]
     Def,
-    #[spectec_item(name = "gram")]
+    #[spectec_node(name = "gram")]
     Gram,
 }
 
@@ -86,9 +86,9 @@ mod test {
 
     #[test]
     fn test_extra_string() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SpecTecNode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_item(name = "a")]
+            #[spectec_node(name = "a")]
             A { b: String },
         }
 
@@ -109,9 +109,9 @@ mod test {
 
     #[test]
     fn test_extra_item() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SpecTecNode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_item(name = "a")]
+            #[spectec_node(name = "a")]
             A {
                 #[spectec_field(vec = true)]
                 b: Vec<TestEnum>,
@@ -135,9 +135,9 @@ mod test {
 
     #[test]
     fn test_extra_item_unit() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SpecTecNode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_item(name = "a")]
+            #[spectec_node(name = "a")]
             A,
         }
 
@@ -158,9 +158,9 @@ mod test {
 
     #[test]
     fn test_incompat_item() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SpecTecNode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_item(name = "a")]
+            #[spectec_node(name = "a")]
             A {
                 #[spectec_field(vec = true)]
                 b: Vec<TestEnum>,
