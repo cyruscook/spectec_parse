@@ -1,4 +1,9 @@
-#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::pedantic
+)]
 
 mod decode;
 mod reader;
@@ -7,7 +12,7 @@ pub use decode::*;
 
 pub use spectec_derive::*;
 
-/// https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L216
+/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L216>
 #[allow(unused)]
 #[derive(SpecTecItem, Debug, PartialEq)]
 pub enum SpecTecDef {
@@ -29,7 +34,7 @@ pub enum SpecTecDef {
     Rec,
 }
 
-/// https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L189
+/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L189>
 #[derive(SpecTecItem, Debug, PartialEq)]
 pub enum SpecTestParam {
     #[spectec_item(name = "exp")]
@@ -42,7 +47,7 @@ pub enum SpecTestParam {
     Gram,
 }
 
-/// https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L196
+/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L196>
 #[derive(SpecTecItem, Debug, PartialEq)]
 pub enum SpecTestInst {
     #[spectec_item(name = "inst")]

@@ -13,7 +13,15 @@ pub enum DecodeError {
 }
 
 pub trait Decode: Sized {
+    /// Checks if the s-expression item can be decoded into Self.
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool;
+
+    /// Decodes s-expression item into Self.
+    ///
+    /// # Errors
+    ///
+    /// Will return an error if the s-expression cannot be represented by Self. To avoid this case,
+    /// use `can_decode` to check if the item can be decoded first.
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError>;
 }
 
@@ -30,7 +38,16 @@ impl Decode for String {
     }
 }
 
-pub fn decode_iter<V: Into<Vec<T>>, T: Decode, I: Iterator<Item = crate::sexpr::SExprItem>>(
+/// Decodes multiple items from an iterator into a Vec<T>.
+/// Stops processing when an item is encountered that T cannot decode.
+#[allow(clippy::extra_unused_type_parameters)]
+pub(crate) fn decode_iter<
+    // We need V so that the macro can use Vec<T> and the compiler can infer T from that
+    // Otherwise the macro would need to do some logic to extract T from Vec<T> itself
+    V: Into<Vec<T>>,
+    T: Decode,
+    I: Iterator<Item = crate::sexpr::SExprItem>,
+>(
     items: &mut Peekable<I>,
 ) -> Result<Vec<T>, DecodeError> {
     let mut parsed = Vec::new();

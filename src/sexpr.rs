@@ -107,8 +107,9 @@ pub fn read_text(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
                 })?;
                 true
             }
-            Some(_) => false,
-            None => false, // EOF - we'll handle with the read_one_byte call
+            Some(_)
+           | None // EOF - we'll handle with the read_one_byte call
+           => false,
         };
         let byte = read_one_byte(r)?;
         if !escaped && byte == b'"' {
@@ -132,12 +133,12 @@ pub enum SExprItem {
 impl Display for SExprItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SExprItem::Atom(s) => write!(f, "{}", s),
-            SExprItem::Text(s) => write!(f, "\"{}\"", s),
+            SExprItem::Atom(s) => write!(f, "{s}"),
+            SExprItem::Text(s) => write!(f, "\"{s}\""),
             SExprItem::Node(name, items) => {
-                write!(f, "({}", name)?;
-                for item in items.iter() {
-                    write!(f, " {}", item)?;
+                write!(f, "({name}")?;
+                for item in items {
+                    write!(f, " {item}")?;
                 }
                 write!(f, ")")
             }

@@ -57,7 +57,7 @@ impl<'a> Reader<'a> {
     }
 }
 
-impl<'a> Read for Reader<'a> {
+impl Read for Reader<'_> {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
         let remaining = self.data.len() - self.position;
         let to_read = buf.len().min(remaining);
