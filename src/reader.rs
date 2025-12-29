@@ -2,7 +2,7 @@
 
 use std::io::Read;
 
-pub struct Reader<'a> {
+pub(crate) struct Reader<'a> {
     data: &'a str,
     position: usize,
 }

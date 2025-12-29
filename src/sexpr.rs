@@ -41,7 +41,7 @@ impl SExprError {
     }
 }
 
-pub fn read_one_byte(r: &mut crate::reader::Reader) -> Result<u8, SExprError> {
+fn read_one_byte(r: &mut crate::reader::Reader) -> Result<u8, SExprError> {
     let mut byte = [0u8; 1];
     let n = r.read(&mut byte).map_err(|e| SExprError::Io {
         source: e,
@@ -57,7 +57,7 @@ pub fn read_one_byte(r: &mut crate::reader::Reader) -> Result<u8, SExprError> {
     }
 }
 
-pub fn read_symbol(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
+fn read_symbol(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
     let mut buf = Vec::new();
     loop {
         if let Some(c) = r.peek()
@@ -80,7 +80,7 @@ pub fn read_symbol(r: &mut crate::reader::Reader) -> Result<String, SExprError> 
     })
 }
 
-pub fn read_required_byte(r: &mut crate::reader::Reader, expected: u8) -> Result<(), SExprError> {
+fn read_required_byte(r: &mut crate::reader::Reader, expected: u8) -> Result<(), SExprError> {
     let byte = read_one_byte(r)?;
     if byte == expected {
         Ok(())
@@ -93,7 +93,7 @@ pub fn read_required_byte(r: &mut crate::reader::Reader, expected: u8) -> Result
     }
 }
 
-pub fn read_text(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
+fn read_text(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
     let mut buf = Vec::new();
     // Check first item is quote
     read_required_byte(r, b'"').map_err(|err| err.with_context("parsing beginning of text"))?;
@@ -186,8 +186,7 @@ fn read_node(reader: &mut crate::reader::Reader) -> Result<SExprItem, SExprError
     Ok(SExprItem::Node(name, items))
 }
 
-#[allow(unused)]
-pub fn parse_sexpr_stream(input: &str) -> Result<Vec<SExprItem>, SExprError> {
+pub(crate) fn parse_sexpr_stream(input: &str) -> Result<Vec<SExprItem>, SExprError> {
     let mut reader = crate::reader::Reader::new(input);
     let mut out = Vec::new();
     loop {

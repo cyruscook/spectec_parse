@@ -130,7 +130,7 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
             }
 
             quote! {
-                gen impl Decode for @Self {
+                gen impl crate::decode::Decode for @Self {
                     fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
                         match item {
                             crate::sexpr::SExprItem::Node(name, _items) => {

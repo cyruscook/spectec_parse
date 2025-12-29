@@ -12,7 +12,7 @@ pub enum DecodeError {
     SExpr(#[from] crate::sexpr::SExprError),
 }
 
-pub trait Decode: Sized {
+pub(crate) trait Decode: Sized {
     /// Checks if the s-expression item can be decoded into Self.
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool;
 
@@ -40,7 +40,7 @@ impl Decode for String {
 
 /// Decodes multiple items from an iterator into a Vec<T>.
 /// Stops processing when an item is encountered that T cannot decode.
-#[allow(clippy::extra_unused_type_parameters)]
+#[allow(unused, clippy::extra_unused_type_parameters)]
 pub(crate) fn decode_iter<
     // We need V so that the macro can use Vec<T> and the compiler can infer T from that
     // Otherwise the macro would need to do some logic to extract T from Vec<T> itself
