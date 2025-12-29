@@ -36,6 +36,8 @@ pub fn decode_iter<V: Into<Vec<T>>, T: Decode, I: Iterator<Item = crate::sexpr::
     let mut parsed = Vec::new();
     while let Some(item) = items.peek() {
         if T::can_decode(item) {
+            // We know that there is another item as we've checked the result of peek
+            #[allow(clippy::unwrap_used)]
             let item = items.next().unwrap();
             parsed.push(T::decode(item)?);
         } else {
