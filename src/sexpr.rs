@@ -122,7 +122,7 @@ pub fn read_text(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
     })
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum SExprItem {
     Atom(String),
     Text(String),

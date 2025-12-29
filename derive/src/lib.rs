@@ -19,9 +19,25 @@ macro_rules! syn_try {
     };
 }
 
+fn get_attr<'a>(name: &str, attrs: &'a [syn::Attribute]) -> Option<&'a syn::Attribute> {
+    let mut matching_attrs = attrs.iter().filter(|attr| attr.meta.path().is_ident(name));
+    match matching_attrs.next() {
+        None => None,
+        Some(first) => {
+            // Check this is the only matching one
+            if matching_attrs.next().is_none() {
+                Some(first)
+            } else {
+                None
+            }
+        }
+    }
+}
+
 pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
     let decode = match s.ast().data {
         syn::Data::Enum(_) => {
+            let mut allowed_names = quote!();
             let mut decoders = quote!();
 
             for v in s.variants() {
@@ -32,18 +48,12 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                     ));
                 }
                 let variant_name = v.ast().ident;
-                let item_attrs = v
-                    .ast()
-                    .attrs
-                    .iter()
-                    .filter(|attr| attr.meta.path().is_ident("spectec_item"))
-                    .collect::<Vec<_>>();
-                let item_attr = if let [item_attr] = item_attrs.as_slice() {
-                    item_attr
+                let item_attr = if let Some(attr) = get_attr("spectec_item", v.ast().attrs) {
+                    attr
                 } else {
                     syn_throw!(syn::Error::new_spanned(
                         variant_name,
-                        "Must be exactly one spectec_item attribute"
+                        "Must have a spectec_item attribute"
                     ));
                 };
                 let item_name: Expr = syn_try!(item_attr.parse_args_with(
@@ -54,6 +64,10 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                         parser.parse::<Expr>()
                     }
                 ));
+                (quote!(
+                    #item_name => true,
+                ))
+                .to_tokens(&mut allowed_names);
                 match v.ast().fields {
                     syn::Fields::Unit => {
                         (quote!(
@@ -62,28 +76,51 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                         .to_tokens(&mut decoders);
                     }
                     syn::Fields::Named(named) => {
-                        let field_names = named
-                            .named
-                            .iter()
-                            .map(|f| f.ident.as_ref().unwrap())
-                            .collect::<Vec<_>>();
-                        let field_decodes = named
-                            .named
-                            .iter()
-                            .map(|f| {
-                                let ty = &f.ty;
-                                quote! {
-                                    #ty::decode(r)?
-                                }
-                            })
-                            .collect::<Vec<_>>();
+                        let mut field_parses = quote!();
+                        for f in &named.named {
+                            let fname = f.ident.as_ref().unwrap();
+                            let ftype = &f.ty;
+                            let is_vec =
+                                if let Some(item_attr) = get_attr("spectec_field", &f.attrs) {
+                                    syn_try!(item_attr.parse_args_with(
+                                        |parser: syn::parse::ParseStream| {
+                                            syn::custom_keyword!(vec);
+                                            parser.parse::<vec>()?;
+                                            parser.parse::<syn::Token![=]>()?;
+                                            parser.parse::<Expr>()
+                                        }
+                                    )) == syn_try!(syn::parse_str::<Expr>("true"))
+                                } else {
+                                    false
+                                };
+                            if is_vec {
+                                (quote! (
+                                    let #fname = crate::decode::decode_iter::<#ftype, _, _>(&mut items)?;
+                                ))
+                                .to_tokens(&mut field_parses);
+                            } else {
+                                (quote! (
+                                    let #fname = <#ftype as crate::decode::Decode>::decode(items.next().unwrap())?;
+                                ))
+                                .to_tokens(&mut field_parses);
+                            }
+                        }
+                        let field_names = named.named.iter().map(|f| f.ident.as_ref().unwrap());
                         (quote!(
                             #item_name => {
-                                Ok(Self::#variant_name {
+                                let mut items = items.into_iter().peekable();
+                                #field_parses
+                                // We should have consumed all the items
+                                if let Some(i) = items.next() {
+                                    return Err(crate::decode::DecodeError::UnexpectedItem(
+                                        i,
+                                    ));
+                                }
+                                Self::#variant_name {
                                     #(
-                                        #field_names: #field_decodes,
+                                        #field_names,
                                     )*
-                                })
+                                }
                             },
                         ))
                         .to_tokens(&mut decoders);
@@ -93,9 +130,19 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
             }
 
             quote! {
-                gen impl Decode for @Self
-                    {
-                    fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
+                gen impl Decode for @Self {
+                    fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
+                        match item {
+                            crate::sexpr::SExprItem::Node(name, _items) => {
+                                match name.as_str() {
+                                    #allowed_names
+                                    _ => false,
+                                }
+                            },
+                            _ => false,
+                        }
+                    }
+                    fn decode(item: crate::sexpr::SExprItem) -> Result<Self, crate::decode::DecodeError> {
                         match item {
                             crate::sexpr::SExprItem::Node(name, items) => {
                                 Ok(match name.as_str() {
@@ -103,7 +150,7 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                                     _ => {return Err(crate::decode::DecodeError::UnrecognisedSymbol(name))}
                                 })
                             },
-                            _ => Err(DecodeError::UnexpectedItem(item)),
+                            _ => Err(crate::decode::DecodeError::UnexpectedItem(item)),
                         }
                     }
                 }
@@ -119,4 +166,4 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
     })
 }
 
-decl_derive!([SpecTecItem, attributes(spectec_item)] => spectec_item_derive);
+decl_derive!([SpecTecItem, attributes(spectec_item, spectec_field)] => spectec_item_derive);
