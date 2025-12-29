@@ -99,6 +99,29 @@ mod test {
     }
 
     #[test]
+    fn test_extra_item_unit() {
+        #[derive(SpecTecItem, Debug, PartialEq)]
+        pub enum TestEnum {
+            #[spectec_item(name = "a")]
+            A,
+        }
+
+        let input = r#"(a (b))"#;
+        let sexprs = match crate::sexpr::parse_sexpr_stream(input) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
+        for sexpr in sexprs {
+            let parsed = TestEnum::decode(sexpr);
+            assert!(parsed.is_err());
+            assert_eq!(
+                parsed.unwrap_err().to_string(),
+                "Unexpected item 'Node(\"b\", [])'"
+            );
+        }
+    }
+
+    #[test]
     fn test_incompat_item() {
         #[derive(SpecTecItem, Debug, PartialEq)]
         pub enum TestEnum {
@@ -126,7 +149,7 @@ mod test {
 
     #[test]
     fn test_spectec_def_enum() {
-        let input = r#"(typ "m" (inst (alias nat)))"#;
+        let input = r#"(typ "m" (inst))"#;
         let sexprs = match crate::sexpr::parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),

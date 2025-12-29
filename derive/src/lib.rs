@@ -71,7 +71,15 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                 match v.ast().fields {
                     syn::Fields::Unit => {
                         (quote!(
-                            #item_name => Self::#variant_name,
+                            #item_name => {
+                                // There should be no items for a unit variant
+                                if let Some(i) = items.into_iter().next() {
+                                    return Err(crate::decode::DecodeError::UnexpectedItem(
+                                        i,
+                                    ));
+                                }
+                                Self::#variant_name
+                            },
                         ))
                         .to_tokens(&mut decoders);
                     }
