@@ -15,16 +15,22 @@ macro_rules! syn_try {
 }
 pub(crate) use syn_try;
 
-pub(crate) fn get_attr<'a>(name: &str, attrs: &'a [syn::Attribute]) -> Option<&'a syn::Attribute> {
+pub(crate) fn get_attr<'a>(
+    name: &str,
+    attrs: &'a [syn::Attribute],
+) -> Result<Option<&'a syn::Attribute>, syn::Error> {
     let mut matching_attrs = attrs.iter().filter(|attr| attr.meta.path().is_ident(name));
     match matching_attrs.next() {
-        None => None,
+        None => Ok(None),
         Some(first) => {
             // Check this is the only matching one
-            if matching_attrs.next().is_none() {
-                Some(first)
+            if let Some(second) = matching_attrs.next() {
+                Err(syn::Error::new_spanned(
+                    second,
+                    format!("Cannot have more than one attribute with name '{}'", name),
+                ))
             } else {
-                None
+                Ok(Some(first))
             }
         }
     }
