@@ -41,7 +41,42 @@ pub enum SpecTestParam {
 #[derive(SpecTecItem, Debug, PartialEq)]
 pub enum SpecTestInst {
     #[spectec_item(name = "inst")]
-    Inst,
+    Inst {
+        #[spectec_field(vec = true)]
+        bindings: Vec<SpecTestBind>,
+        #[spectec_field(vec = true)]
+        args: Vec<SpecTestArg>,
+        #[spectec_field(vec = true)]
+        deftyps: Vec<SpecTestArg>,
+    },
+}
+
+/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#182>
+#[allow(unused)]
+#[derive(SpecTecItem, Debug, PartialEq)]
+pub enum SpecTestBind {
+    #[spectec_item(name = "exp")]
+    Exp,
+    #[spectec_item(name = "typ")]
+    Typ,
+    #[spectec_item(name = "def")]
+    Def,
+    #[spectec_item(name = "gram")]
+    Gram,
+}
+
+/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#175>
+#[allow(unused)]
+#[derive(SpecTecItem, Debug, PartialEq)]
+pub enum SpecTestArg {
+    #[spectec_item(name = "exp")]
+    Exp,
+    #[spectec_item(name = "typ")]
+    Typ,
+    #[spectec_item(name = "def")]
+    Def,
+    #[spectec_item(name = "gram")]
+    Gram,
 }
 
 #[cfg(test)]
@@ -166,7 +201,11 @@ mod test {
             vec![SpecTecDef::Typ {
                 id: "m".to_string(),
                 params: vec![],
-                insts: vec![SpecTestInst::Inst]
+                insts: vec![SpecTestInst::Inst {
+                    bindings: vec![],
+                    args: vec![],
+                    deftyps: vec![],
+                }]
             }]
         );
     }

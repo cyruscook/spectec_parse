@@ -49,12 +49,20 @@ mod test {
             vec![
                 SpecTecDef::Typ {
                     id: "m".to_string(),
-                    insts: vec![SpecTestInst::Inst],
+                    insts: vec![SpecTestInst::Inst {
+                        bindings: vec![],
+                        args: vec![],
+                        deftyps: vec![],
+                    }],
                     params: vec![],
                 },
                 SpecTecDef::Typ {
                     id: "n".to_string(),
-                    insts: vec![SpecTestInst::Inst],
+                    insts: vec![SpecTestInst::Inst {
+                        bindings: vec![],
+                        args: vec![],
+                        deftyps: vec![],
+                    }],
                     params: vec![],
                 },
             ]
