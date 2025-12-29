@@ -33,6 +33,7 @@ pub enum SExprError {
 }
 
 impl SExprError {
+    #[must_use]
     pub fn with_context(self, context: &str) -> SExprError {
         SExprError::WithContext {
             source: Box::new(self),

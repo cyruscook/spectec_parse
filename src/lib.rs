@@ -1,9 +1,11 @@
 #![deny(
+    clippy::arithmetic_side_effects,
     clippy::unwrap_used,
     clippy::expect_used,
     clippy::panic,
     clippy::pedantic
 )]
+#![allow(clippy::doc_markdown)]
 
 mod decode;
 mod reader;
@@ -13,6 +15,12 @@ pub mod spectec;
 pub use decode::DecodeError;
 pub use sexpr::SExprError;
 
+/// Parses a SpecTec AST stream from the input string.
+///
+/// # Errors
+///
+/// Will return an error if any of the s-expressions cannot be decoded, or if the s-expressions are
+/// not a valid SpecTec AST stream.
 pub fn parse_spectec_stream(input: &str) -> Result<Vec<spectec::SpecTecDef>, decode::DecodeError> {
     let sexpr_items = crate::sexpr::parse_sexpr_stream(input)?;
     let mut parsed = Vec::new();
