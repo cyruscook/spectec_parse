@@ -1,4 +1,4 @@
-use spectec_derive::SpecTecNode;
+use spectec_derive::{SpecTecAtom, SpecTecNode};
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L216>
 #[allow(unused)]
@@ -77,6 +77,22 @@ pub enum SpecTestArg {
     Def,
     #[spectec_node(name = "gram")]
     Gram,
+}
+
+/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#28>
+#[allow(unused)]
+#[derive(SpecTecAtom, Debug, PartialEq)]
+pub enum SpecTecUnOp {
+    #[spectec_atom(name = "not")]
+    Not,
+    #[spectec_atom(name = "plus")]
+    Plus,
+    #[spectec_atom(name = "minus")]
+    Minus,
+    #[spectec_atom(name = "plusminus")]
+    PlusMinus,
+    #[spectec_atom(name = "minusplus")]
+    MinusPlus,
 }
 
 #[cfg(test)]
@@ -206,6 +222,43 @@ mod test {
                     args: vec![],
                     deftyps: vec![],
                 }]
+            }]
+        );
+    }
+
+    #[test]
+    fn test_spectec_atom() {
+        #[derive(SpecTecNode, Debug, PartialEq)]
+        pub enum TestEnum {
+            #[spectec_node(name = "a")]
+            A {
+                #[spectec_field(vec = true)]
+                b: Vec<SpecTecUnOp>,
+            },
+        }
+
+        let input = r#"(a minus minusplus not plus plusminus)"#;
+        let sexprs = match crate::sexpr::parse_sexpr_stream(input) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
+        let parsed = sexprs
+            .into_iter()
+            .map(|sexpr| match TestEnum::decode(sexpr) {
+                Ok(p) => p,
+                Err(e) => panic!("{}", e),
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            parsed,
+            vec![TestEnum::A {
+                b: vec![
+                    SpecTecUnOp::Minus,
+                    SpecTecUnOp::MinusPlus,
+                    SpecTecUnOp::Not,
+                    SpecTecUnOp::Plus,
+                    SpecTecUnOp::PlusMinus,
+                ]
             }]
         );
     }
