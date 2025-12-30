@@ -11,24 +11,13 @@ mod decode;
 mod reader;
 mod sexpr;
 pub mod spectec;
+pub mod wasm;
 
 pub use decode::DecodeError;
 pub use sexpr::SExprError;
 
-/// Parses a SpecTec AST stream from the input string.
-///
-/// # Errors
-///
-/// Will return an error if any of the s-expressions cannot be decoded, or if the s-expressions are
-/// not a valid SpecTec AST stream.
-pub fn parse_spectec_stream(input: &str) -> Result<Vec<spectec::SpecTecDef>, decode::DecodeError> {
-    let sexpr_items = crate::sexpr::parse_sexpr_stream(input)?;
-    let mut parsed = Vec::new();
-    for item in sexpr_items {
-        parsed.push(decode::Decode::decode(item)?);
-    }
-    Ok(parsed)
-}
+pub use spectec::parse_spectec_stream;
+pub use wasm::get_wasm_spectec_ast;
 
 #[cfg(test)]
 mod test {
@@ -37,8 +26,8 @@ mod test {
     #[test]
     fn test_parse_spectec_stream() {
         let input = r#"
-(typ "m" (inst))
-(typ "n" (inst))
+(typ "m" (inst (alias nat)))
+(typ "n" (inst (alias nat)))
 "#;
         let parsed = match parse_spectec_stream(input) {
             Ok(p) => p,
@@ -48,22 +37,26 @@ mod test {
             parsed,
             vec![
                 SpecTecDef::Typ {
-                    id: "m".to_string(),
-                    insts: vec![SpecTestInst::Inst {
-                        bindings: vec![],
-                        args: vec![],
-                        deftyps: vec![],
+                    x: "m".to_string(),
+                    insts: vec![SpecTecInst::Inst {
+                        bs: vec![],
+                        as_: vec![],
+                        dt: SpecTecDefTyp::Alias {
+                            typ: SpecTecTyp::Num("nat".to_owned()),
+                        },
                     }],
-                    params: vec![],
+                    ps: vec![],
                 },
                 SpecTecDef::Typ {
-                    id: "n".to_string(),
-                    insts: vec![SpecTestInst::Inst {
-                        bindings: vec![],
-                        args: vec![],
-                        deftyps: vec![],
+                    x: "n".to_string(),
+                    insts: vec![SpecTecInst::Inst {
+                        bs: vec![],
+                        as_: vec![],
+                        dt: SpecTecDefTyp::Alias {
+                            typ: SpecTecTyp::Num("nat".to_owned()),
+                        },
                     }],
-                    params: vec![],
+                    ps: vec![],
                 },
             ]
         );

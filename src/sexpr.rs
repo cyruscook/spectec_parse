@@ -34,10 +34,10 @@ pub enum SExprError {
 
 impl SExprError {
     #[must_use]
-    pub fn with_context(self, context: &str) -> SExprError {
-        SExprError::WithContext {
+    pub fn with_context<R: AsRef<str>>(self, context: R) -> Self {
+        Self::WithContext {
             source: Box::new(self),
-            context: context.to_string(),
+            context: context.as_ref().to_string(),
         }
     }
 }
