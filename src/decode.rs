@@ -48,6 +48,25 @@ pub(crate) trait Decode: Sized {
 
     /// Decodes multiple items from an iterator into a `Vec<Self>`.
     /// Stops processing when an item is encountered that `T` cannot decode.
+    fn can_decode_iter<'a, I: Iterator<Item = &'a crate::sexpr::SExprItem>>(
+        items: &mut Peekable<I>,
+    ) -> bool {
+        while let Some(item) = items.peek() {
+            if Self::can_decode(item) {
+                // We know that there is another item as we've checked the result of peek
+                #[allow(clippy::unwrap_used)]
+                items.next().unwrap();
+            } else {
+                // T cannot accept the item. Stop processing. Still return true as the item could
+                // be for a later field.
+                return true;
+            }
+        }
+        return true;
+    }
+
+    /// Decodes multiple items from an iterator into a `Vec<Self>`.
+    /// Stops processing when an item is encountered that `T` cannot decode.
     fn decode_iter<I: Iterator<Item = crate::sexpr::SExprItem>>(
         items: &mut Peekable<I>,
     ) -> Result<Vec<Self>, DecodeError> {
@@ -168,6 +187,22 @@ impl Decode for String {
         }
         .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
+}
+
+/// Checks multiple items from an iterator can be decoded into a Vec<T>.
+/// Stops processing when an item is encountered that T cannot decode.
+/// This is a convenience wrapper around T::can_decode_iter, which can be used in macros to avoid
+/// the need to specify T explicitly, instead the compiler can infer T from V (Vec<T>).
+#[allow(unused, clippy::extra_unused_type_parameters)]
+pub(crate) fn can_decode_iter<
+    'a,
+    V: Into<Vec<T>>,
+    T: Decode,
+    I: Iterator<Item = &'a crate::sexpr::SExprItem>,
+>(
+    items: &mut Peekable<I>,
+) -> bool {
+    T::can_decode_iter(items)
 }
 
 /// Decodes multiple items from an iterator into a Vec<T>.

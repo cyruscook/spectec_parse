@@ -501,11 +501,7 @@ mod definitions {
     #[derive(SpecTecItem, Debug, PartialEq)]
     pub enum SpecTecBind {
         #[spectec_node(name = "exp")]
-        Exp {
-            #[spectec_field(vec = true)]
-            x: Vec<String>,
-            t: SpecTecTyp,
-        },
+        Exp { x: String, t: SpecTecTyp },
         #[spectec_node(name = "typ")]
         Typ { x: String },
         #[spectec_node(name = "def")]
@@ -690,7 +686,7 @@ mod test {
             assert!(parsed.is_err());
             assert_eq!(
                 parsed.unwrap_err().to_string(),
-                "while decoding spectec_parse::spectec::test::test_extra_string::TestEnum: Unexpected item 'Text(\"c\")'"
+                "while decoding spectec_parse::spectec::test::test_extra_string::TestEnum: decoding variant A: Unexpected item 'Text(\"c\")'"
             );
         }
     }
@@ -716,7 +712,7 @@ mod test {
             assert!(parsed.is_err());
             assert_eq!(
                 parsed.unwrap_err().to_string(),
-                "while decoding spectec_parse::spectec::test::test_extra_item::TestEnum: Unexpected item 'Node(\"b\", [])'"
+                "while decoding spectec_parse::spectec::test::test_extra_item::TestEnum: decoding variant A: Unexpected item 'Node(\"b\", [])'"
             );
         }
     }
@@ -739,7 +735,7 @@ mod test {
             assert!(parsed.is_err());
             assert_eq!(
                 parsed.unwrap_err().to_string(),
-                "while decoding spectec_parse::spectec::test::test_extra_item_unit::TestEnum: Unexpected item 'Node(\"b\", [])'"
+                "while decoding spectec_parse::spectec::test::test_extra_item_unit::TestEnum: decoding variant A: Unexpected item 'Node(\"b\", [])'"
             );
         }
     }
@@ -765,7 +761,7 @@ mod test {
             assert!(parsed.is_err());
             assert_eq!(
                 parsed.unwrap_err().to_string(),
-                "while decoding spectec_parse::spectec::test::test_incompat_item::TestEnum: Unexpected item 'Text(\"a\")'"
+                "while decoding spectec_parse::spectec::test::test_incompat_item::TestEnum: decoding variant A: Unexpected item 'Text(\"a\")'"
             );
         }
     }

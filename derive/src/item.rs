@@ -85,12 +85,16 @@ fn process_node(
         parser.parse::<syn::Token![=]>()?;
         parser.parse::<syn::Expr>()
     })?;
-    (quote!(
-        #item_name => true,
-    ))
-    .to_tokens(node_checkers);
     match variant_fields {
         syn::Fields::Unit => {
+            (quote!(
+                #item_name => {
+                    // There should be no items for a unit variant
+                    items.len() == 0
+                },
+            ))
+            .to_tokens(node_checkers);
+
             (quote!(
                 #item_name => {
                     // There should be no items for a unit variant
@@ -106,6 +110,7 @@ fn process_node(
             Ok(())
         }
         syn::Fields::Named(named) => {
+            let mut field_checks: Vec<TokenStream> = Vec::new();
             let mut field_parses = quote!();
             for f in &named.named {
                 let fname = f.ident.as_ref().unwrap();
@@ -122,6 +127,9 @@ fn process_node(
                     false
                 };
                 if is_vec {
+                    field_checks.push(quote!(
+                        crate::decode::can_decode_iter::<#ftype, _, _>(&mut items)
+                    ));
                     (quote! (
                         let #fname = crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str))
@@ -129,6 +137,11 @@ fn process_node(
                     ))
                     .to_tokens(&mut field_parses);
                 } else {
+                    field_checks.push(quote!(matches!(
+                        items.next()
+                            .map(<#ftype as crate::decode::Decode>::can_decode),
+                        Some(true)
+                    )));
                     (quote! (
                         let #fname = items.next()
                             .ok_or_else(|| crate::decode::DecodeError::MissingItem)
@@ -140,6 +153,21 @@ fn process_node(
                 }
             }
             let field_names = named.named.iter().map(|f| f.ident.as_ref().unwrap());
+            (quote!(
+                #item_name => {
+                    let mut items = items.iter().peekable();
+                    (
+                        #(
+                            #field_checks
+                            &&
+                        )*
+                        // There should be no more items
+                        items.next().is_none()
+                    )
+
+                },
+            ))
+            .to_tokens(node_checkers);
             (quote!(
                 #item_name => {
                     let mut items = items.into_iter().peekable();
@@ -296,7 +324,7 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                             crate::sexpr::SExprItem::Atom(name) => match name.as_str() {
                                 #atom_checkers
                             },
-                            crate::sexpr::SExprItem::Node(name, _) => match name.as_str() {
+                            crate::sexpr::SExprItem::Node(name, items) => match name.as_str() {
                                 #node_checkers
                             },
                             _ => false,
