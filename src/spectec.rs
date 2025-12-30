@@ -131,7 +131,21 @@ mod types {
     use crate::spectec::{SpecTecArg, SpecTecBind, SpecTecExp, SpecTecIter, SpecTecPrem};
     use spectec_derive::SpecTecItem;
 
-    pub type SpecTecOpTyp = String;
+    /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L70>
+    #[allow(unused)]
+    #[derive(SpecTecItem, Debug, PartialEq)]
+    pub enum SpecTecOpTyp {
+        #[spectec_atom(name = "nat")]
+        Nat,
+        #[spectec_node(name = "int")]
+        Int,
+        #[spectec_node(name = "rat")]
+        Rat,
+        #[spectec_node(name = "real")]
+        Real,
+        #[spectec_node(name = "bool")]
+        Bool,
+    }
 
     /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#74>
     #[allow(unused)]
@@ -487,7 +501,11 @@ mod definitions {
     #[derive(SpecTecItem, Debug, PartialEq)]
     pub enum SpecTecBind {
         #[spectec_node(name = "exp")]
-        Exp { x: String, t: SpecTecTyp },
+        Exp {
+            #[spectec_field(vec = true)]
+            x: Vec<String>,
+            t: SpecTecTyp,
+        },
         #[spectec_node(name = "typ")]
         Typ { x: String },
         #[spectec_node(name = "def")]
