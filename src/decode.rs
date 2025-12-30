@@ -57,7 +57,9 @@ pub(crate) trait Decode: Sized {
                 // We know that there is another item as we've checked the result of peek
                 #[allow(clippy::unwrap_used)]
                 let item = items.next().unwrap();
-                parsed.push(Self::decode(item)?);
+                parsed.push(Self::decode(item).map_err(|e| {
+                    e.with_context(format!("while decoding {}", std::any::type_name::<Self>()))
+                })?);
             } else {
                 // T cannot accept the item. Stop processing
                 break;
@@ -73,7 +75,9 @@ impl<T: Decode> Decode for Box<T> {
     }
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
-        Ok(Self::new(T::decode(item)?))
+        T::decode(item).map(Self::new).map_err(|e| {
+            e.with_context(format!("while decoding {}", std::any::type_name::<Self>()))
+        })
     }
 }
 
@@ -95,23 +99,18 @@ impl<T: Decode> Decode for Option<T> {
                         && matches!(t.get(..=0), Some("["))
                         && matches!(t.get(t.len() - 1..), Some("]"))
                     {
-                        Ok(Some(T::decode(crate::sexpr::SExprItem::Text(
-                            t[1..t.len() - 1].to_owned(),
-                        ))?))
+                        T::decode(crate::sexpr::SExprItem::Text(t[1..t.len() - 1].to_owned()))
+                            .map(Some)
                     } else {
-                        Err(
-                            DecodeError::UnexpectedItem(crate::sexpr::SExprItem::Text(t))
-                                .with_context(format!(
-                                    "while decoding {}",
-                                    std::any::type_name::<Self>()
-                                )),
-                        )
+                        Err(DecodeError::UnexpectedItem(crate::sexpr::SExprItem::Text(
+                            t,
+                        )))
                     }
                 }
             }
-            _ => Err(DecodeError::UnexpectedItem(item)
-                .with_context(format!("while decoding {}", std::any::type_name::<Self>()))),
+            _ => Err(DecodeError::UnexpectedItem(item)),
         }
+        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }
 
@@ -122,10 +121,10 @@ impl Decode for bool {
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
         match item {
-            crate::sexpr::SExprItem::Atom(t) => Ok(t.parse()?),
-            _ => Err(DecodeError::UnexpectedItem(item)
-                .with_context(format!("while decoding {}", std::any::type_name::<Self>()))),
+            crate::sexpr::SExprItem::Atom(t) => t.parse().map_err(DecodeError::from),
+            _ => Err(DecodeError::UnexpectedItem(item)),
         }
+        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }
 
@@ -136,10 +135,10 @@ impl Decode for u64 {
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
         match item {
-            crate::sexpr::SExprItem::Atom(t) => Ok(t.parse()?),
-            _ => Err(DecodeError::UnexpectedItem(item)
-                .with_context(format!("while decoding {}", std::any::type_name::<Self>()))),
+            crate::sexpr::SExprItem::Atom(t) => t.parse().map_err(DecodeError::from),
+            _ => Err(DecodeError::UnexpectedItem(item)),
         }
+        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }
 
@@ -150,10 +149,10 @@ impl Decode for i64 {
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
         match item {
-            crate::sexpr::SExprItem::Atom(t) => Ok(t.parse()?),
-            _ => Err(DecodeError::UnexpectedItem(item)
-                .with_context(format!("while decoding {}", std::any::type_name::<Self>()))),
+            crate::sexpr::SExprItem::Atom(t) => t.parse().map_err(DecodeError::from),
+            _ => Err(DecodeError::UnexpectedItem(item)),
         }
+        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }
 
@@ -165,9 +164,9 @@ impl Decode for String {
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
         match item {
             crate::sexpr::SExprItem::Text(t) => Ok(t),
-            _ => Err(DecodeError::UnexpectedItem(item)
-                .with_context(format!("while decoding {}", std::any::type_name::<Self>()))),
+            _ => Err(DecodeError::UnexpectedItem(item)),
         }
+        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }
 

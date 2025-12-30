@@ -4,6 +4,7 @@ use quote::{ToTokens, quote};
 use synstructure::Structure;
 
 fn process_atom(
+    s_name: &syn::Ident,
     atom_checkers: &mut TokenStream,
     atom_decoders: &mut TokenStream,
     atom_takes_any_name: &mut Option<TokenStream>,
@@ -32,7 +33,7 @@ fn process_atom(
         syn::Fields::Unit => {
             if let Some(item_name) = item_name {
                 (quote!(
-                    #item_name => Self::#variant_name,
+                    #item_name => #s_name::#variant_name,
                 ))
                 .to_tokens(atom_decoders);
                 Ok(())
@@ -57,7 +58,7 @@ fn process_atom(
                     ))
                 } else {
                     *atom_takes_any_name = Some(quote!(
-                        _ => Self::#variant_name(name),
+                        _ => #s_name::#variant_name(name),
                     ));
                     Ok(())
                 }
@@ -70,12 +71,14 @@ fn process_atom(
     }
 }
 fn process_node(
+    s_name: &syn::Ident,
     node_checkers: &mut TokenStream,
     node_decoders: &mut TokenStream,
     item_attr: &syn::Attribute,
     variant_name: &syn::Ident,
     variant_fields: &syn::Fields,
 ) -> Result<(), syn::Error> {
+    let variant_name_str = variant_name.to_token_stream().to_string();
     let item_name: syn::Expr = item_attr.parse_args_with(|parser: syn::parse::ParseStream| {
         syn::custom_keyword!(name);
         parser.parse::<name>()?;
@@ -94,9 +97,9 @@ fn process_node(
                     if let Some(i) = items.into_iter().next() {
                         return Err(crate::decode::DecodeError::UnexpectedItem(
                             i,
-                        ).with_context(format!("while decoding {}", std::any::type_name::<Self>())));
+                        ).with_context(concat!("decoding variant ", #variant_name_str)));
                     }
-                    Self::#variant_name
+                    #s_name::#variant_name
                 },
             ))
             .to_tokens(node_decoders);
@@ -106,6 +109,7 @@ fn process_node(
             let mut field_parses = quote!();
             for f in &named.named {
                 let fname = f.ident.as_ref().unwrap();
+                let fname_str = fname.to_token_stream().to_string();
                 let ftype = &f.ty;
                 let is_vec = if let Some(item_attr) = get_attr("spectec_field", &f.attrs)? {
                     item_attr.parse_args_with(|parser: syn::parse::ParseStream| {
@@ -119,12 +123,18 @@ fn process_node(
                 };
                 if is_vec {
                     (quote! (
-                        let #fname = crate::decode::decode_iter::<#ftype, _, _>(&mut items)?;
+                        let #fname = crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
+                            e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str))
+                        })?;
                     ))
                     .to_tokens(&mut field_parses);
                 } else {
                     (quote! (
-                        let #fname = <#ftype as crate::decode::Decode>::decode(items.next().ok_or_else(|| crate::decode::DecodeError::MissingItem.with_context(format!("while decoding {}", std::any::type_name::<Self>())))?)?;
+                        let #fname = items.next()
+                            .ok_or_else(|| crate::decode::DecodeError::MissingItem)
+                            .map(<#ftype as crate::decode::Decode>::decode)
+                            .flatten()
+                            .map_err(|e| e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str)))?;
                     ))
                     .to_tokens(&mut field_parses);
                 }
@@ -138,9 +148,9 @@ fn process_node(
                     if let Some(i) = items.next() {
                         return Err(crate::decode::DecodeError::UnexpectedItem(
                             i,
-                        ).with_context(format!("while decoding {}", std::any::type_name::<Self>())));
+                        ).with_context(concat!("decoding variant ", #variant_name_str)));
                     }
-                    Self::#variant_name {
+                    #s_name::#variant_name {
                         #(
                             #field_names,
                         )*
@@ -166,12 +176,18 @@ fn process_node(
                 };
                 if is_vec {
                     (quote! (
-                        crate::decode::decode_iter::<#ftype, _, _>(&mut items)?,
+                        crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
+                            e.with_context(concat!("decoding variant ", #variant_name_str))
+                        })?,
                     ))
                     .to_tokens(&mut field_parses);
                 } else {
                     (quote! (
-                        <#ftype as crate::decode::Decode>::decode(items.next().ok_or_else(|| crate::decode::DecodeError::MissingItem.with_context(format!("while decoding {}", std::any::type_name::<Self>())))?)?,
+                        items.next()
+                            .ok_or_else(|| crate::decode::DecodeError::MissingItem)
+                            .map(<#ftype as crate::decode::Decode>::decode)
+                            .flatten()
+                            .map_err(|e| e.with_context(concat!("decoding variant ", #variant_name_str)))?,
                     ))
                     .to_tokens(&mut field_parses);
                 }
@@ -179,14 +195,14 @@ fn process_node(
             (quote!(
                 #item_name => {
                     let mut items = items.into_iter().peekable();
-                    let out = Self::#variant_name (
+                    let out = #s_name::#variant_name (
                         #field_parses
                     );
                     // We should have consumed all the items
                     if let Some(i) = items.next() {
                         return Err(crate::decode::DecodeError::UnexpectedItem(
                             i,
-                        ).with_context(format!("while decoding {}", std::any::type_name::<Self>())));
+                        ).with_context(concat!("decoding variant ", #variant_name_str)));
                     }
                     out
                 },
@@ -198,6 +214,7 @@ fn process_node(
 }
 
 pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
+    let s_name = s.ast().ident.clone();
     let decode = match s.ast().data {
         syn::Data::Enum(_) => {
             let mut atom_checkers = quote!();
@@ -216,6 +233,7 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                 let variant_name = v.ast().ident;
                 if let Some(item_attr) = syn_try!(get_attr("spectec_atom", v.ast().attrs)) {
                     syn_try!(process_atom(
+                        &s_name,
                         &mut atom_checkers,
                         &mut atom_decoders,
                         &mut atom_takes_any_name,
@@ -225,6 +243,7 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                     ));
                 } else if let Some(item_attr) = syn_try!(get_attr("spectec_node", v.ast().attrs)) {
                     syn_try!(process_node(
+                        &s_name,
                         &mut node_checkers,
                         &mut node_decoders,
                         item_attr,
@@ -284,15 +303,20 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                         }
                     }
                     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, crate::decode::DecodeError> {
-                        Ok(match item {
-                            crate::sexpr::SExprItem::Atom(name) => match name.as_str() {
-                                #atom_decoders
-                            },
-                            crate::sexpr::SExprItem::Node(name, items) => match name.as_str() {
-                                #node_decoders
-                            },
-                            _ => return Err(crate::decode::DecodeError::UnexpectedItem(item)),
-                        })
+                        fn impl_decode(item: crate::sexpr::SExprItem) -> Result<#s_name, crate::decode::DecodeError> {
+                            Ok(match item {
+                                crate::sexpr::SExprItem::Atom(name) => match name.as_str() {
+                                    #atom_decoders
+                                },
+                                crate::sexpr::SExprItem::Node(name, items) => match name.as_str() {
+                                    #node_decoders
+                                },
+                                _ => return Err(crate::decode::DecodeError::UnexpectedItem(item)),
+                            })
+                        }
+
+                        impl_decode(item)
+                            .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
                     }
                 }
             }
