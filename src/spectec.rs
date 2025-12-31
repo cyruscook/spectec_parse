@@ -454,9 +454,15 @@ mod grammars {
         #[spectec_atom(name = "eps")]
         Eps,
         #[spectec_node(name = "seq")]
-        Seq { gs: Box<SpecTecSym> },
+        Seq {
+            #[spectec_field(vec = true)]
+            gs: Vec<SpecTecSym>,
+        },
         #[spectec_node(name = "alt")]
-        Alt { gs: Box<SpecTecSym> },
+        Alt {
+            #[spectec_field(vec = true)]
+            gs: Vec<SpecTecSym>,
+        },
         #[spectec_node(name = "range")]
         Range {
             g1: Box<SpecTecSym>,
