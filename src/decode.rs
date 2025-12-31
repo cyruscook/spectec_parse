@@ -46,8 +46,8 @@ pub(crate) trait Decode: Sized {
     /// use `can_decode` to check if the item can be decoded first.
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError>;
 
-    /// Decodes multiple items from an iterator into a `Vec<Self>`.
-    /// Stops processing when an item is encountered that `T` cannot decode.
+    /// Takes from an iterator all the items that can be decoded into a Vec<T>.
+    /// Always returns true, as we can decode the items we take from the iterator (even if none)
     fn can_decode_iter<'a, I: Iterator<Item = &'a crate::sexpr::SExprItem>>(
         items: &mut Peekable<I>,
     ) -> bool {
@@ -57,15 +57,13 @@ pub(crate) trait Decode: Sized {
                 #[allow(clippy::unwrap_used)]
                 items.next().unwrap();
             } else {
-                // T cannot accept the item. Stop processing. Still return true as the item could
-                // be for a later field.
-                return true;
+                break;
             }
         }
-        return true;
+        true
     }
 
-    /// Decodes multiple items from an iterator into a `Vec<Self>`.
+    /// Decodes as many items from an iterator as we can.
     /// Stops processing when an item is encountered that `T` cannot decode.
     fn decode_iter<I: Iterator<Item = crate::sexpr::SExprItem>>(
         items: &mut Peekable<I>,
@@ -135,7 +133,10 @@ impl<T: Decode> Decode for Option<T> {
 
 impl Decode for bool {
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
-        matches!(item, crate::sexpr::SExprItem::Text(_))
+        match item {
+            crate::sexpr::SExprItem::Atom(t) => t.parse::<Self>().is_ok(),
+            _ => false,
+        }
     }
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
@@ -149,7 +150,10 @@ impl Decode for bool {
 
 impl Decode for u64 {
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
-        matches!(item, crate::sexpr::SExprItem::Text(_))
+        match item {
+            crate::sexpr::SExprItem::Atom(t) => t.parse::<Self>().is_ok(),
+            _ => false,
+        }
     }
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
@@ -163,7 +167,10 @@ impl Decode for u64 {
 
 impl Decode for i64 {
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
-        matches!(item, crate::sexpr::SExprItem::Text(_))
+        match item {
+            crate::sexpr::SExprItem::Atom(t) => t.parse::<Self>().is_ok(),
+            _ => false,
+        }
     }
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
@@ -189,8 +196,8 @@ impl Decode for String {
     }
 }
 
-/// Checks multiple items from an iterator can be decoded into a Vec<T>.
-/// Stops processing when an item is encountered that T cannot decode.
+/// Takes from an iterator all the items that can be decoded into a Vec<T>.
+/// Always returns true, as we can decode the items we take from the iterator (even if none)
 /// This is a convenience wrapper around T::can_decode_iter, which can be used in macros to avoid
 /// the need to specify T explicitly, instead the compiler can infer T from V (Vec<T>).
 #[allow(unused, clippy::extra_unused_type_parameters)]
@@ -205,8 +212,8 @@ pub(crate) fn can_decode_iter<
     T::can_decode_iter(items)
 }
 
-/// Decodes multiple items from an iterator into a Vec<T>.
-/// Stops processing when an item is encountered that T cannot decode.
+/// Decodes as many items from an iterator as we can.
+/// Stops processing when an item is encountered that `T` cannot decode.
 /// This is a convenience wrapper around T::decode_iter, which can be used in macros to avoid the
 /// need to specify T explicitly, instead the compiler can infer T from V (Vec<T>).
 #[allow(unused, clippy::extra_unused_type_parameters)]

@@ -42,7 +42,7 @@ mod test {
                         bs: vec![],
                         as_: vec![],
                         dt: SpecTecDefTyp::Alias {
-                            typ: SpecTecTyp::Num("nat".to_owned()),
+                            typ: SpecTecTyp::Num(SpecTecNumTyp::Nat),
                         },
                     }],
                     ps: vec![],
@@ -53,7 +53,7 @@ mod test {
                         bs: vec![],
                         as_: vec![],
                         dt: SpecTecDefTyp::Alias {
-                            typ: SpecTecTyp::Num("nat".to_owned()),
+                            typ: SpecTecTyp::Num(SpecTecNumTyp::Nat),
                         },
                     }],
                     ps: vec![],

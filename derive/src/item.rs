@@ -7,11 +7,12 @@ fn process_atom(
     s_name: &syn::Ident,
     atom_checkers: &mut TokenStream,
     atom_decoders: &mut TokenStream,
-    atom_takes_any_name: &mut Option<TokenStream>,
+    atom_takes_any_name: &mut Vec<(TokenStream, TokenStream)>,
     item_attr: &syn::Attribute,
     variant_name: &syn::Ident,
     variant_fields: &syn::Fields,
 ) -> Result<(), syn::Error> {
+    let variant_name_str = variant_name.to_token_stream().to_string();
     let item_name: Option<syn::Expr> =
         item_attr.parse_args_with(|parser: syn::parse::ParseStream| {
             Ok(if parser.is_empty() {
@@ -51,14 +52,26 @@ fn process_atom(
                     "Atom variants with unnamed fields must not have a name",
                 ))
             } else {
-                if atom_takes_any_name.is_some() {
+                if unnamed.unnamed.len() != 1 {
                     Err(syn::Error::new_spanned(
                         unnamed,
-                        "There may only be one unnamed atom variant",
+                        "Atom variant with unnamed fields must only have one",
                     ))
                 } else {
-                    *atom_takes_any_name = Some(quote!(
-                        _ => #s_name::#variant_name(name),
+                    let ftype = &unnamed.unnamed.get(0).unwrap().ty;
+                    atom_takes_any_name.push((
+                        quote!(
+                            #ftype::can_decode(&item) ||
+                        ),
+                        quote!(
+                            if #ftype::can_decode(&item) {
+                                #ftype::decode(item)
+                                    .map(#s_name::#variant_name)
+                                    .map_err(|e| {
+                                        e.with_context(concat!("decoding variant ", #variant_name_str, " field 0"))
+                                    })
+                            } else
+                        ),
                     ));
                     Ok(())
                 }
@@ -101,7 +114,7 @@ fn process_node(
                     if let Some(i) = items.into_iter().next() {
                         return Err(crate::decode::DecodeError::UnexpectedItem(
                             i,
-                        ).with_context(concat!("decoding variant ", #variant_name_str)));
+                        ).with_context(concat!("decoding variant ", #variant_name_str, " unit type should have no items")));
                     }
                     #s_name::#variant_name
                 },
@@ -137,11 +150,11 @@ fn process_node(
                     ))
                     .to_tokens(&mut field_parses);
                 } else {
-                    field_checks.push(quote!(matches!(
+                    field_checks.push(quote!(
                         items.next()
-                            .map(<#ftype as crate::decode::Decode>::can_decode),
-                        Some(true)
-                    )));
+                            .map(<#ftype as crate::decode::Decode>::can_decode)
+                        == Some(true)
+                    ));
                     (quote! (
                         let #fname = items.next()
                             .ok_or_else(|| crate::decode::DecodeError::MissingItem)
@@ -164,7 +177,6 @@ fn process_node(
                         // There should be no more items
                         items.next().is_none()
                     )
-
                 },
             ))
             .to_tokens(node_checkers);
@@ -172,23 +184,25 @@ fn process_node(
                 #item_name => {
                     let mut items = items.into_iter().peekable();
                     #field_parses
+                    let out = #s_name::#variant_name {
+                        #(
+                            #field_names,
+                        )*
+                    };
                     // We should have consumed all the items
                     if let Some(i) = items.next() {
                         return Err(crate::decode::DecodeError::UnexpectedItem(
                             i,
-                        ).with_context(concat!("decoding variant ", #variant_name_str)));
+                        ).with_context(format!(concat!("decoding variant ", #variant_name_str, " item not consumed by fields ({:?})"), out)));
                     }
-                    #s_name::#variant_name {
-                        #(
-                            #field_names,
-                        )*
-                    }
+                    out
                 },
             ))
             .to_tokens(node_decoders);
             Ok(())
         }
         syn::Fields::Unnamed(unnamed) => {
+            let mut field_checks: Vec<TokenStream> = Vec::new();
             let mut field_parses = quote!();
             for f in &unnamed.unnamed {
                 let ftype = &f.ty;
@@ -203,6 +217,9 @@ fn process_node(
                     false
                 };
                 if is_vec {
+                    field_checks.push(quote!(
+                        crate::decode::can_decode_iter::<#ftype, _, _>(&mut items)
+                    ));
                     (quote! (
                         crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str))
@@ -210,6 +227,11 @@ fn process_node(
                     ))
                     .to_tokens(&mut field_parses);
                 } else {
+                    field_checks.push(quote!(
+                        items.next()
+                            .map(<#ftype as crate::decode::Decode>::can_decode)
+                        == Some(true)
+                    ));
                     (quote! (
                         items.next()
                             .ok_or_else(|| crate::decode::DecodeError::MissingItem)
@@ -222,6 +244,20 @@ fn process_node(
             }
             (quote!(
                 #item_name => {
+                    let mut items = items.iter().peekable();
+                    (
+                        #(
+                            #field_checks
+                            &&
+                        )*
+                        // There should be no more items
+                        items.next().is_none()
+                    )
+                },
+            ))
+            .to_tokens(node_checkers);
+            (quote!(
+                #item_name => {
                     let mut items = items.into_iter().peekable();
                     let out = #s_name::#variant_name (
                         #field_parses
@@ -230,7 +266,7 @@ fn process_node(
                     if let Some(i) = items.next() {
                         return Err(crate::decode::DecodeError::UnexpectedItem(
                             i,
-                        ).with_context(concat!("decoding variant ", #variant_name_str)));
+                        ).with_context(format!(concat!("decoding variant ", #variant_name_str, " item not consumed by fields ({:?})"), out)));
                     }
                     out
                 },
@@ -247,7 +283,7 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
         syn::Data::Enum(_) => {
             let mut atom_checkers = quote!();
             let mut node_checkers = quote!();
-            let mut atom_takes_any_name = None;
+            let mut atom_takes_any_name = Vec::new();
             let mut atom_decoders = quote!();
             let mut node_decoders = quote!();
 
@@ -286,9 +322,11 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                 };
             }
 
-            let atom_checkers = if atom_takes_any_name.is_some() {
+            let atom_checkers = if !atom_takes_any_name.is_empty() {
+                let any_checkers = atom_takes_any_name.iter().map(|q| &q.0);
                 quote!(
-                    _ => true,
+                    #atom_checkers
+                    _ => #( #any_checkers )* false
                 )
             } else {
                 quote!(
@@ -301,10 +339,14 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                 _ => false,
             );
 
-            let atom_decoders = if let Some(atom_takes_any_name) = atom_takes_any_name {
+            let atom_decoders = if !atom_takes_any_name.is_empty() {
+                let any_decoders = atom_takes_any_name.iter().map(|q| &q.1);
                 quote!(
                     #atom_decoders
-                    #atom_takes_any_name
+                    _ => {
+                        let item = crate::sexpr::SExprItem::Atom(name.clone());
+                        #( #any_decoders )* { Err(crate::decode::DecodeError::UnrecognisedSymbol(name)) }?
+                    }
                 )
             } else {
                 quote!(
