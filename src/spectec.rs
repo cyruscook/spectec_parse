@@ -260,8 +260,8 @@ pub use types::*;
 
 mod expressions {
     use crate::spectec::{
-        MixOp, SpecTecArg, SpecTecBinOp, SpecTecCmpOp, SpecTecIter, SpecTecNum, SpecTecOpTyp,
-        SpecTecTyp, SpecTecUnOp,
+        MixOp, SpecTecArg, SpecTecBinOp, SpecTecCmpOp, SpecTecIter, SpecTecNum, SpecTecNumTyp,
+        SpecTecOpTyp, SpecTecTyp, SpecTecUnOp,
     };
     use spectec_derive::SpecTecItem;
 
@@ -384,8 +384,8 @@ mod expressions {
         },
         #[spectec_node(name = "cvt")]
         Cvt {
-            nt1: String,
-            nt2: String,
+            nt1: SpecTecNumTyp,
+            nt2: SpecTecNumTyp,
             e1: Box<SpecTecExp>,
         },
         #[spectec_node(name = "sub")]

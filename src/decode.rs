@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{iter::Peekable, num::ParseIntError};
 
 use thiserror::Error;
 
@@ -115,34 +115,50 @@ impl Decode for bool {
     }
 }
 
+fn parse_u64_str(s: &str) -> Result<u64, ParseIntError> {
+    if s.starts_with("0x") {
+        u64::from_str_radix(&s[2..], 16)
+    } else {
+        u64::from_str_radix(s, 10)
+    }
+}
+
 impl Decode for u64 {
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
         match item {
-            crate::sexpr::SExprItem::Atom(t) => t.parse::<Self>().is_ok(),
+            crate::sexpr::SExprItem::Atom(t) => parse_u64_str(t).is_ok(),
             _ => false,
         }
     }
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
         match item {
-            crate::sexpr::SExprItem::Atom(t) => t.parse().map_err(DecodeError::from),
+            crate::sexpr::SExprItem::Atom(t) => parse_u64_str(&t).map_err(DecodeError::from),
             _ => Err(DecodeError::UnexpectedItem(item)),
         }
         .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }
 
+fn parse_i64_str(s: &str) -> Result<i64, ParseIntError> {
+    if s.starts_with("0x") {
+        i64::from_str_radix(&s[2..], 16)
+    } else {
+        i64::from_str_radix(s, 10)
+    }
+}
+
 impl Decode for i64 {
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
         match item {
-            crate::sexpr::SExprItem::Atom(t) => t.parse::<Self>().is_ok(),
+            crate::sexpr::SExprItem::Atom(t) => parse_i64_str(t).is_ok(),
             _ => false,
         }
     }
 
     fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
         match item {
-            crate::sexpr::SExprItem::Atom(t) => t.parse().map_err(DecodeError::from),
+            crate::sexpr::SExprItem::Atom(t) => parse_i64_str(&t).map_err(DecodeError::from),
             _ => Err(DecodeError::UnexpectedItem(item)),
         }
         .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
