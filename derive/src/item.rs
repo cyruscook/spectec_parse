@@ -110,7 +110,7 @@ fn process_node(
                 #item_name => {
                     // There should be no items for a unit variant
                     if let Some(i) = items.into_iter().next() {
-                        return Err(crate::decode::DecodeError::UnexpectedItem(
+                        return Err(spectec_decode::DecodeError::UnexpectedItem(
                             i,
                         ).with_context(concat!("decoding variant ", #variant_name_str, " unit type should have no items")));
                     }
@@ -130,20 +130,20 @@ fn process_node(
                 let (is_vec, is_option) = check_spectec_field_attr(&f.attrs)?;
                 if is_vec {
                     field_checks.push(quote!(
-                        crate::decode::can_decode_iter::<#ftype, _, _>(&mut items)
+                        spectec_decode::can_decode_iter::<#ftype, _, _>(&mut items)
                     ));
                     (quote! (
-                        let #fname = crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
+                        let #fname = spectec_decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str))
                         })?;
                     ))
                     .to_tokens(&mut field_parses);
                 } else if is_option {
                     field_checks.push(quote!(
-                        crate::decode::can_decode_option::<#ftype, _, _>(&mut items)
+                        spectec_decode::can_decode_option::<#ftype, _, _>(&mut items)
                     ));
                     (quote! (
-                        let #fname = crate::decode::decode_option::<#ftype, _, _>(&mut items).map_err(|e| {
+                        let #fname = spectec_decode::decode_option::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str))
                         })?;
                     ))
@@ -151,13 +151,13 @@ fn process_node(
                 } else {
                     field_checks.push(quote!(
                         items.next()
-                            .map(<#ftype as crate::decode::Decode>::can_decode)
+                            .map(<#ftype as spectec_decode::Decode>::can_decode)
                         == Some(true)
                     ));
                     (quote! (
                         let #fname = items.next()
-                            .ok_or_else(|| crate::decode::DecodeError::MissingItem)
-                            .map(<#ftype as crate::decode::Decode>::decode)
+                            .ok_or_else(|| spectec_decode::DecodeError::MissingItem)
+                            .map(<#ftype as spectec_decode::Decode>::decode)
                             .flatten()
                             .map_err(|e| e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str)))?;
                     ))
@@ -190,7 +190,7 @@ fn process_node(
                     };
                     // We should have consumed all the items
                     if let Some(i) = items.next() {
-                        return Err(crate::decode::DecodeError::UnexpectedItem(
+                        return Err(spectec_decode::DecodeError::UnexpectedItem(
                             i,
                         ).with_context(format!(concat!("decoding variant ", #variant_name_str, " item not consumed by fields ({:?})"), out)));
                     }
@@ -208,20 +208,20 @@ fn process_node(
                 let (is_vec, is_option) = check_spectec_field_attr(&f.attrs)?;
                 if is_vec {
                     field_checks.push(quote!(
-                        crate::decode::can_decode_iter::<#ftype, _, _>(&mut items)
+                        spectec_decode::can_decode_iter::<#ftype, _, _>(&mut items)
                     ));
                     (quote! (
-                        crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
+                        spectec_decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str))
                         })?,
                     ))
                     .to_tokens(&mut field_parses);
                 } else if is_option {
                     field_checks.push(quote!(
-                        crate::decode::can_decode_option::<#ftype, _, _>(&mut items)
+                        spectec_decode::can_decode_option::<#ftype, _, _>(&mut items)
                     ));
                     (quote! (
-                        crate::decode::decode_option::<#ftype, _, _>(&mut items).map_err(|e| {
+                        spectec_decode::decode_option::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str))
                         })?,
                     ))
@@ -229,13 +229,13 @@ fn process_node(
                 } else {
                     field_checks.push(quote!(
                         items.next()
-                            .map(<#ftype as crate::decode::Decode>::can_decode)
+                            .map(<#ftype as spectec_decode::Decode>::can_decode)
                         == Some(true)
                     ));
                     (quote! (
                         items.next()
-                            .ok_or_else(|| crate::decode::DecodeError::MissingItem)
-                            .map(<#ftype as crate::decode::Decode>::decode)
+                            .ok_or_else(|| spectec_decode::DecodeError::MissingItem)
+                            .map(<#ftype as spectec_decode::Decode>::decode)
                             .flatten()
                             .map_err(|e| e.with_context(concat!("decoding variant ", #variant_name_str)))?,
                     ))
@@ -264,7 +264,7 @@ fn process_node(
                     );
                     // We should have consumed all the items
                     if let Some(i) = items.next() {
-                        return Err(crate::decode::DecodeError::UnexpectedItem(
+                        return Err(spectec_decode::DecodeError::UnexpectedItem(
                             i,
                         ).with_context(format!(concat!("decoding variant ", #variant_name_str, " item not consumed by fields ({:?})"), out)));
                     }
@@ -344,44 +344,44 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                 quote!(
                     #atom_decoders
                     _ => {
-                        let item = crate::sexpr::SExprItem::Atom(name.clone());
-                        #( #any_decoders )* { Err(crate::decode::DecodeError::UnrecognisedSymbol(name)) }?
+                        let item = sexpr::SExprItem::Atom(name.clone());
+                        #( #any_decoders )* { Err(spectec_decode::DecodeError::UnrecognisedSymbol(name)) }?
                     }
                 )
             } else {
                 quote!(
                     #atom_decoders
-                    _ => return Err(crate::decode::DecodeError::UnrecognisedSymbol(name)),
+                    _ => return Err(spectec_decode::DecodeError::UnrecognisedSymbol(name)),
                 )
             };
             let node_decoders = quote!(
                 #node_decoders
-                _ => return Err(crate::decode::DecodeError::UnrecognisedSymbol(name)),
+                _ => return Err(spectec_decode::DecodeError::UnrecognisedSymbol(name)),
             );
 
             quote! {
-                gen impl crate::decode::Decode for @Self {
-                    fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
+                gen impl spectec_decode::Decode for @Self {
+                    fn can_decode(item: &sexpr::SExprItem) -> bool {
                         match item {
-                            crate::sexpr::SExprItem::Atom(name) => match name.as_str() {
+                            sexpr::SExprItem::Atom(name) => match name.as_str() {
                                 #atom_checkers
                             },
-                            crate::sexpr::SExprItem::Node(name, items) => match name.as_str() {
+                            sexpr::SExprItem::Node(name, items) => match name.as_str() {
                                 #node_checkers
                             },
                             _ => false,
                         }
                     }
-                    fn decode(item: crate::sexpr::SExprItem) -> Result<Self, crate::decode::DecodeError> {
-                        fn impl_decode(item: crate::sexpr::SExprItem) -> Result<#s_name, crate::decode::DecodeError> {
+                    fn decode(item: sexpr::SExprItem) -> Result<Self, spectec_decode::DecodeError> {
+                        fn impl_decode(item: sexpr::SExprItem) -> Result<#s_name, spectec_decode::DecodeError> {
                             Ok(match item {
-                                crate::sexpr::SExprItem::Atom(name) => match name.as_str() {
+                                sexpr::SExprItem::Atom(name) => match name.as_str() {
                                     #atom_decoders
                                 },
-                                crate::sexpr::SExprItem::Node(name, items) => match name.as_str() {
+                                sexpr::SExprItem::Node(name, items) => match name.as_str() {
                                     #node_decoders
                                 },
-                                _ => return Err(crate::decode::DecodeError::UnexpectedItem(item)),
+                                _ => return Err(spectec_decode::DecodeError::UnexpectedItem(item)),
                             })
                         }
 

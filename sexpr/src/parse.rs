@@ -1,48 +1,9 @@
-use std::fmt::Display;
+use crate::error::SExprError;
+use crate::reader::Reader;
+use crate::sexpr::SExprItem;
 use std::io::Read;
-use std::string::FromUtf8Error;
 
-use thiserror::Error;
-
-#[derive(Error, Debug)]
-pub enum SExprError {
-    #[error("io error at {position}: {source}")]
-    Io {
-        #[source]
-        source: std::io::Error,
-        position: usize,
-    },
-    #[error("utf8 error at {position}: {source}")]
-    Utf8 {
-        #[source]
-        source: FromUtf8Error,
-        position: usize,
-    },
-    #[error("unexpected byte at {position}: found {unexpected:#x}, expected {expected:#x}")]
-    UnexpectedByte {
-        unexpected: u8,
-        expected: u8,
-        position: usize,
-    },
-    #[error("{context}: {source}")]
-    WithContext {
-        #[source]
-        source: Box<SExprError>,
-        context: String,
-    },
-}
-
-impl SExprError {
-    #[must_use]
-    pub fn with_context<R: AsRef<str>>(self, context: R) -> Self {
-        Self::WithContext {
-            source: Box::new(self),
-            context: context.as_ref().to_string(),
-        }
-    }
-}
-
-fn read_one_byte(r: &mut crate::reader::Reader) -> Result<u8, SExprError> {
+fn read_one_byte(r: &mut Reader) -> Result<u8, SExprError> {
     let mut byte = [0u8; 1];
     let n = r.read(&mut byte).map_err(|e| SExprError::Io {
         source: e,
@@ -58,7 +19,7 @@ fn read_one_byte(r: &mut crate::reader::Reader) -> Result<u8, SExprError> {
     }
 }
 
-fn read_symbol(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
+fn read_symbol(r: &mut Reader) -> Result<String, SExprError> {
     let mut buf = Vec::new();
     loop {
         if let Some(c) = r.peek()
@@ -81,7 +42,7 @@ fn read_symbol(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
     })
 }
 
-fn read_required_byte(r: &mut crate::reader::Reader, expected: u8) -> Result<(), SExprError> {
+fn read_required_byte(r: &mut Reader, expected: u8) -> Result<(), SExprError> {
     let byte = read_one_byte(r)?;
     if byte == expected {
         Ok(())
@@ -94,7 +55,7 @@ fn read_required_byte(r: &mut crate::reader::Reader, expected: u8) -> Result<(),
     }
 }
 
-fn read_text(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
+fn read_text(r: &mut Reader) -> Result<String, SExprError> {
     let mut buf = Vec::new();
     // Check first item is quote
     read_required_byte(r, b'"').map_err(|err| err.with_context("parsing beginning of text"))?;
@@ -124,30 +85,7 @@ fn read_text(r: &mut crate::reader::Reader) -> Result<String, SExprError> {
     })
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum SExprItem {
-    Atom(String),
-    Text(String),
-    Node(String, Vec<SExprItem>),
-}
-
-impl Display for SExprItem {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            SExprItem::Atom(s) => write!(f, "{s}"),
-            SExprItem::Text(s) => write!(f, "\"{s}\""),
-            SExprItem::Node(name, items) => {
-                write!(f, "({name}")?;
-                for item in items {
-                    write!(f, " {item}")?;
-                }
-                write!(f, ")")
-            }
-        }
-    }
-}
-
-fn read_node(reader: &mut crate::reader::Reader) -> Result<SExprItem, SExprError> {
+fn read_node(reader: &mut Reader) -> Result<SExprItem, SExprError> {
     // Read opening '('
     read_required_byte(reader, b'(')
         .map_err(|err| err.with_context("parsing beginning of new node"))?;
@@ -187,8 +125,8 @@ fn read_node(reader: &mut crate::reader::Reader) -> Result<SExprItem, SExprError
     Ok(SExprItem::Node(name, items))
 }
 
-pub(crate) fn parse_sexpr_stream(input: &str) -> Result<Vec<SExprItem>, SExprError> {
-    let mut reader = crate::reader::Reader::new(input);
+pub fn parse_sexpr_stream(input: &str) -> Result<Vec<SExprItem>, SExprError> {
+    let mut reader = Reader::new(input);
     let mut out = Vec::new();
     loop {
         reader.consume_whitespace().map_err(|err| SExprError::Io {
@@ -206,7 +144,7 @@ pub(crate) fn parse_sexpr_stream(input: &str) -> Result<Vec<SExprItem>, SExprErr
 
 #[cfg(test)]
 mod test {
-    use crate::{reader::Reader, sexpr::*};
+    use crate::parse::*;
 
     #[test]
     fn test_sexpr_parse_escaped_text() {

@@ -1,0 +1,10 @@
+[package]
+name = "spectec_ast"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+spectec-derive = { version = "0.1.0", path = "../derive" }
+spectec-decode = { version = "0.1.0", path = "../decode" }
+sexpr = { version = "0.1.0", path = "../sexpr" }
+thiserror = "2.0.17"
