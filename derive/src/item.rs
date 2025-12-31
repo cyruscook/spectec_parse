@@ -1,4 +1,4 @@
-use crate::utils::{get_attr, syn_throw, syn_try};
+use crate::utils::{check_spectec_field_attr, get_attr, syn_throw, syn_try};
 use proc_macro2::TokenStream;
 use quote::{ToTokens, quote};
 use synstructure::Structure;
@@ -51,30 +51,28 @@ fn process_atom(
                     item_name,
                     "Atom variants with unnamed fields must not have a name",
                 ))
+            } else if unnamed.unnamed.len() != 1 {
+                Err(syn::Error::new_spanned(
+                    unnamed,
+                    "Atom variant with unnamed fields must only have one",
+                ))
             } else {
-                if unnamed.unnamed.len() != 1 {
-                    Err(syn::Error::new_spanned(
-                        unnamed,
-                        "Atom variant with unnamed fields must only have one",
-                    ))
-                } else {
-                    let ftype = &unnamed.unnamed.get(0).unwrap().ty;
-                    atom_takes_any_name.push((
-                        quote!(
-                            #ftype::can_decode(&item) ||
-                        ),
-                        quote!(
-                            if #ftype::can_decode(&item) {
-                                #ftype::decode(item)
-                                    .map(#s_name::#variant_name)
-                                    .map_err(|e| {
-                                        e.with_context(concat!("decoding variant ", #variant_name_str, " field 0"))
-                                    })
-                            } else
-                        ),
-                    ));
-                    Ok(())
-                }
+                let ftype = &unnamed.unnamed.get(0).unwrap().ty;
+                atom_takes_any_name.push((
+                    quote!(
+                        #ftype::can_decode(&item) ||
+                    ),
+                    quote!(
+                        if #ftype::can_decode(&item) {
+                            #ftype::decode(item)
+                                .map(#s_name::#variant_name)
+                                .map_err(|e| {
+                                    e.with_context(concat!("decoding variant ", #variant_name_str, " field 0"))
+                                })
+                        } else
+                    ),
+                ));
+                Ok(())
             }
         }
         syn::Fields::Named(named) => Err(syn::Error::new_spanned(
@@ -129,22 +127,23 @@ fn process_node(
                 let fname = f.ident.as_ref().unwrap();
                 let fname_str = fname.to_token_stream().to_string();
                 let ftype = &f.ty;
-                let is_vec = if let Some(item_attr) = get_attr("spectec_field", &f.attrs)? {
-                    item_attr.parse_args_with(|parser: syn::parse::ParseStream| {
-                        syn::custom_keyword!(vec);
-                        parser.parse::<vec>()?;
-                        parser.parse::<syn::Token![=]>()?;
-                        parser.parse::<syn::Expr>()
-                    })? == syn::parse_str::<syn::Expr>("true")?
-                } else {
-                    false
-                };
+                let (is_vec, is_option) = check_spectec_field_attr(&f.attrs)?;
                 if is_vec {
                     field_checks.push(quote!(
                         crate::decode::can_decode_iter::<#ftype, _, _>(&mut items)
                     ));
                     (quote! (
                         let #fname = crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
+                            e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str))
+                        })?;
+                    ))
+                    .to_tokens(&mut field_parses);
+                } else if is_option {
+                    field_checks.push(quote!(
+                        crate::decode::can_decode_option::<#ftype, _, _>(&mut items)
+                    ));
+                    (quote! (
+                        let #fname = crate::decode::decode_option::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str, " field ", #fname_str))
                         })?;
                     ))
@@ -206,22 +205,23 @@ fn process_node(
             let mut field_parses = quote!();
             for f in &unnamed.unnamed {
                 let ftype = &f.ty;
-                let is_vec = if let Some(item_attr) = get_attr("spectec_field", &f.attrs)? {
-                    item_attr.parse_args_with(|parser: syn::parse::ParseStream| {
-                        syn::custom_keyword!(vec);
-                        parser.parse::<vec>()?;
-                        parser.parse::<syn::Token![=]>()?;
-                        parser.parse::<syn::Expr>()
-                    })? == syn::parse_str::<syn::Expr>("true")?
-                } else {
-                    false
-                };
+                let (is_vec, is_option) = check_spectec_field_attr(&f.attrs)?;
                 if is_vec {
                     field_checks.push(quote!(
                         crate::decode::can_decode_iter::<#ftype, _, _>(&mut items)
                     ));
                     (quote! (
                         crate::decode::decode_iter::<#ftype, _, _>(&mut items).map_err(|e| {
+                            e.with_context(concat!("decoding variant ", #variant_name_str))
+                        })?,
+                    ))
+                    .to_tokens(&mut field_parses);
+                } else if is_option {
+                    field_checks.push(quote!(
+                        crate::decode::can_decode_option::<#ftype, _, _>(&mut items)
+                    ));
+                    (quote! (
+                        crate::decode::decode_option::<#ftype, _, _>(&mut items).map_err(|e| {
                             e.with_context(concat!("decoding variant ", #variant_name_str))
                         })?,
                     ))
@@ -302,8 +302,8 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                         &mut atom_decoders,
                         &mut atom_takes_any_name,
                         item_attr,
-                        &variant_name,
-                        &v.ast().fields,
+                        variant_name,
+                        v.ast().fields,
                     ));
                 } else if let Some(item_attr) = syn_try!(get_attr("spectec_node", v.ast().attrs)) {
                     syn_try!(process_node(
@@ -311,8 +311,8 @@ pub(crate) fn spectec_item_derive(s: Structure) -> proc_macro2::TokenStream {
                         &mut node_checkers,
                         &mut node_decoders,
                         item_attr,
-                        &variant_name,
-                        &v.ast().fields,
+                        variant_name,
+                        v.ast().fields,
                     ));
                 } else {
                     syn_throw!(syn::Error::new_spanned(

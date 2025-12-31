@@ -35,3 +35,32 @@ pub(crate) fn get_attr<'a>(
         }
     }
 }
+
+pub(crate) fn check_spectec_field_attr(
+    attrs: &[syn::Attribute],
+) -> Result<(bool, bool), syn::Error> {
+    Ok(if let Some(item_attr) = get_attr("spectec_field", attrs)? {
+        (
+            item_attr
+                .parse_args_with(|parser: syn::parse::ParseStream| {
+                    syn::custom_keyword!(vec);
+                    parser.parse::<vec>()?;
+                    parser.parse::<syn::Token![=]>()?;
+                    parser.parse::<syn::Expr>()
+                })
+                .ok()
+                == syn::parse_str::<syn::Expr>("true").ok(),
+            item_attr
+                .parse_args_with(|parser: syn::parse::ParseStream| {
+                    syn::custom_keyword!(option);
+                    parser.parse::<option>()?;
+                    parser.parse::<syn::Token![=]>()?;
+                    parser.parse::<syn::Expr>()
+                })
+                .ok()
+                == syn::parse_str::<syn::Expr>("true").ok(),
+        )
+    } else {
+        (false, false)
+    })
+}

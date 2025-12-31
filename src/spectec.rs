@@ -256,7 +256,6 @@ mod types {
         },
     }
 }
-use spectec_derive::SpecTecItem;
 pub use types::*;
 
 mod expressions {
@@ -366,8 +365,8 @@ mod expressions {
         Uncase { e1: Box<SpecTecExp>, op: MixOp },
         #[spectec_node(name = "opt")]
         Opt {
-            #[spectec_field(vec = true)]
-            eo: Vec<Option<SpecTecExp>>,
+            #[spectec_field(option = true)]
+            eo: Option<Box<SpecTecExp>>,
         },
         #[spectec_node(name = "unopt")]
         Unopt { e1: Box<SpecTecExp> },
@@ -934,5 +933,73 @@ mod test {
             })
             .collect::<Vec<_>>();
         assert_eq!(parsed, vec![TestEnum::A(0)]);
+    }
+
+    #[test]
+    fn test_spectec_node_option_named_field() {
+        #[derive(SpecTecItem, Debug, PartialEq)]
+        pub enum TestEnum {
+            #[spectec_node(name = "a")]
+            A {
+                #[spectec_field(option = true)]
+                b: Option<u64>,
+                #[spectec_field(option = true)]
+                c: Option<u64>,
+                #[spectec_field(option = true)]
+                d: Option<bool>,
+            },
+        }
+
+        let input = r#"(a 0 false)"#;
+        let sexprs = match crate::sexpr::parse_sexpr_stream(input) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
+
+        let parsed = sexprs
+            .into_iter()
+            .map(|sexpr| {
+                assert!(TestEnum::can_decode(&sexpr));
+                match TestEnum::decode(sexpr) {
+                    Ok(p) => p,
+                    Err(e) => panic!("{}", e),
+                }
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            parsed,
+            vec![TestEnum::A {
+                b: Some(0),
+                c: None,
+                d: Some(false)
+            }]
+        );
+    }
+
+    #[test]
+    fn test_spectec_node_option_unnamed_field() {
+        #[derive(SpecTecItem, Debug, PartialEq)]
+        pub enum TestEnum {
+            #[spectec_node(name = "a")]
+            A(#[spectec_field(option = true)] Option<u64>),
+        }
+
+        let input = r#"(a)"#;
+        let sexprs = match crate::sexpr::parse_sexpr_stream(input) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
+
+        let parsed = sexprs
+            .into_iter()
+            .map(|sexpr| {
+                assert!(TestEnum::can_decode(&sexpr));
+                match TestEnum::decode(sexpr) {
+                    Ok(p) => p,
+                    Err(e) => panic!("{}", e),
+                }
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(parsed, vec![TestEnum::A(None)]);
     }
 }

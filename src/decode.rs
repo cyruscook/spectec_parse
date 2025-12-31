@@ -98,39 +98,6 @@ impl<T: Decode> Decode for Box<T> {
     }
 }
 
-impl<T: Decode> Decode for Option<T> {
-    fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
-        matches!(item, crate::sexpr::SExprItem::Text(_))
-    }
-
-    fn decode(item: crate::sexpr::SExprItem) -> Result<Self, DecodeError> {
-        // https://ocaml.org/manual/5.4/api/Option.html#VALto_list
-        match item {
-            crate::sexpr::SExprItem::Text(t) => {
-                if t == "[]" {
-                    Ok(None)
-                } else {
-                    // Due to validation of length of t we know the arithmetic is safe
-                    #[allow(clippy::arithmetic_side_effects)]
-                    if t.len() > 2
-                        && matches!(t.get(..=0), Some("["))
-                        && matches!(t.get(t.len() - 1..), Some("]"))
-                    {
-                        T::decode(crate::sexpr::SExprItem::Text(t[1..t.len() - 1].to_owned()))
-                            .map(Some)
-                    } else {
-                        Err(DecodeError::UnexpectedItem(crate::sexpr::SExprItem::Text(
-                            t,
-                        )))
-                    }
-                }
-            }
-            _ => Err(DecodeError::UnexpectedItem(item)),
-        }
-        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
-    }
-}
-
 impl Decode for bool {
     fn can_decode(item: &crate::sexpr::SExprItem) -> bool {
         match item {
@@ -194,6 +161,47 @@ impl Decode for String {
         }
         .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
+}
+
+/// Takes from an iterator one item, only if it could be decoded as T.
+/// Always returns true.
+#[allow(unused, clippy::extra_unused_type_parameters)]
+pub(crate) fn can_decode_option<
+    'a,
+    V: From<Option<T>>,
+    T: Decode,
+    I: Iterator<Item = &'a crate::sexpr::SExprItem>,
+>(
+    items: &mut Peekable<I>,
+) -> bool {
+    if let Some(item) = items.peek()
+        && T::can_decode(item)
+    {
+        // We know that there is another item as we've checked the result of peek
+        #[allow(clippy::unwrap_used)]
+        items.next().unwrap();
+    }
+    true
+}
+
+/// Takes from an iterator one item, only if it could be decoded as `T`, in which case the result
+/// of decoding that item as `T` is returned, otherwise `Ok(None)` is returned.
+#[allow(unused, clippy::extra_unused_type_parameters)]
+pub(crate) fn decode_option<
+    V: From<Option<T>>,
+    T: Decode,
+    I: Iterator<Item = crate::sexpr::SExprItem>,
+>(
+    items: &mut Peekable<I>,
+) -> Result<Option<T>, DecodeError> {
+    if let Some(item) = items.peek()
+        && T::can_decode(item)
+    {
+        // We know that there is another item as we've checked the result of peek
+        #[allow(clippy::unwrap_used)]
+        return T::decode(items.next().unwrap()).map(Some);
+    }
+    Ok(None)
 }
 
 /// Takes from an iterator all the items that can be decoded into a Vec<T>.
