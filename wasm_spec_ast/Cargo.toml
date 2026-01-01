@@ -1,7 +1,7 @@
 [package]
 name = "wasm_spec_ast"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 
 [dependencies]
-spectec_ast = { version = "0.1.0", path = "../spectec_ast" }
+spectec_ast = { version = "1.0.0", path = "../spectec_ast" }
