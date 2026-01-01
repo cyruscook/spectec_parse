@@ -213,7 +213,7 @@ pub(crate) fn sexpr_decode_derive(s: Structure) -> proc_macro2::TokenStream {
                 quote!(
                     #atom_decoders
                     name => {
-                        let item = sexpr::SExprItem::Atom(name.to_owned());
+                        let item = sexpr_parse::SExprItem::Atom(name.to_owned());
                         #( #any_decoders )*
                         return Err(decode::Error::unrecognised_atom_symbol::<#s_name, _>(name));
                     }
@@ -226,14 +226,14 @@ pub(crate) fn sexpr_decode_derive(s: Structure) -> proc_macro2::TokenStream {
 
             quote! {
                 gen impl decode::Decode for @Self {
-                    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+                    fn decode<'a, I: Iterator<Item = &'a sexpr_parse::SExprItem>>(
                         items: &mut std::iter::Peekable<I>,
                     ) -> decode::Result<#s_name> {
                         match items.next() {
-                            Some(sexpr::SExprItem::Atom(name)) => match name.as_str() {
+                            Some(sexpr_parse::SExprItem::Atom(name)) => match name.as_str() {
                                 #atom_decoders
                             },
-                            Some(sexpr::SExprItem::Node(name, items)) => match name.as_str() {
+                            Some(sexpr_parse::SExprItem::Node(name, items)) => match name.as_str() {
                                 #node_decoders
                             },
                             Some(item) => return Err(decode::Error::cannot_decode_sexpr::<#s_name>(item)),

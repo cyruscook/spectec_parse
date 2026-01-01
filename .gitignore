@@ -1,5 +1,5 @@
 /target
-/sexpr/target
+/sexpr_parse/target
 /spectec_ast/target
 /spectec_ast_decode/target
 /spectec_ast_decode_derive/target

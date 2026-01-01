@@ -4,14 +4,6 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum ErrorKind {
-    /*#[error("Unrecognised symbol '{0}'")]
-    UnrecognisedSymbol(String),
-    #[error("Missing an expected item")]
-    MissingItem,
-    #[error("Unexpected item '{0:?}'")]
-    UnexpectedItem(sexpr::SExprItem),
-    #[error("Error reading SExpr: {0}")]
-    SExpr(#[from] sexpr::SExprError),*/
     #[error("Unrecognised atom symbol: {0}")]
     UnrecognisedAtomSymbol(String),
     #[error("Unrecognised node symbol: {0}")]
@@ -78,12 +70,12 @@ impl Error {
     }
 
     #[must_use]
-    pub fn cannot_decode_sexpr<T: crate::Decode>(sexpr: &sexpr::SExprItem) -> Self {
+    pub fn cannot_decode_sexpr<T: crate::Decode>(sexpr: &sexpr_parse::SExprItem) -> Self {
         Self::new::<T>(ErrorKind::CannotDecodeSExpr(format!("{sexpr:?}")))
     }
 
     #[must_use]
-    pub fn unparsed_sexpr<T: crate::Decode>(sexpr: &sexpr::SExprItem) -> Self {
+    pub fn unparsed_sexpr<T: crate::Decode>(sexpr: &sexpr_parse::SExprItem) -> Self {
         Self::new::<T>(ErrorKind::UnparsedSExpr(format!("{sexpr:?}")))
     }
 

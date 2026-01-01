@@ -3,7 +3,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("Error parsing S-expression: {0}")]
-    SExpr(#[from] sexpr::SExprError),
+    SExpr(#[from] sexpr_parse::SExprError),
     #[error("Error decoding SpecTec AST: {0}")]
     Decode(#[from] decode::Error),
 }

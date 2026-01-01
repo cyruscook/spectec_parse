@@ -5,11 +5,13 @@ use decode_derive::SExprDecode;
 pub struct MixOp(Vec<String>);
 
 impl decode::Decode for MixOp {
-    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+    fn decode<'a, I: Iterator<Item = &'a sexpr_parse::SExprItem>>(
         items: &mut std::iter::Peekable<I>,
     ) -> decode::Result<Self> {
         match items.next() {
-            Some(sexpr::SExprItem::Text(t)) => Ok(MixOp(t.split('%').map(str::to_owned).collect())),
+            Some(sexpr_parse::SExprItem::Text(t)) => {
+                Ok(MixOp(t.split('%').map(str::to_owned).collect()))
+            }
             Some(item) => Err(decode::Error::cannot_decode_sexpr::<Self>(item)),
             None => Err(decode::Error::required_missing_sexpr::<Self>()),
         }

@@ -30,7 +30,7 @@ pub use crate::{
 /// Will return an error if any of the s-expressions cannot be decoded, or if the s-expressions are
 /// not a valid SpecTec AST stream.
 pub fn parse_spectec_stream(input: &str) -> crate::Result<Vec<SpecTecDef>> {
-    let sexpr_items = sexpr::parse_sexpr_stream(input)?;
+    let sexpr_items = sexpr_parse::parse_sexpr_stream(input)?;
     decode::Decode::decode(&mut sexpr_items.iter().peekable()).map_err(crate::Error::from)
 }
 
@@ -38,7 +38,7 @@ pub fn parse_spectec_stream(input: &str) -> crate::Result<Vec<SpecTecDef>> {
 mod test {
     use crate::*;
     use decode_derive::SExprDecode;
-    use sexpr::parse_sexpr_stream;
+    use sexpr_parse::parse_sexpr_stream;
 
     #[test]
     fn test_extra_string() {
@@ -286,7 +286,7 @@ mod test {
     #[test]
     fn test_spectec_def_enum() {
         let input = r#"(typ "M" (inst (alias nat)))"#;
-        let sexprs = match sexpr::parse_sexpr_stream(input) {
+        let sexprs = match sexpr_parse::parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };

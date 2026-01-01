@@ -11,5 +11,5 @@ keywords = ["wasm", "spectec"]
 [dependencies]
 decode_derive = { package = "spectec_ast_decode_derive", version = "1.0.0", path = "../spectec_ast_decode_derive" }
 decode = { package = "spectec_ast_decode", version = "1.0.0", path = "../spectec_ast_decode" }
-sexpr = { version = "1.0.0", path = "../sexpr" }
+sexpr_parse = { version = "1.0.0", path = "../sexpr_parse" }
 thiserror = "2.0.17"

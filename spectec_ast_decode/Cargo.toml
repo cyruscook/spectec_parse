@@ -10,4 +10,4 @@ publish = false
 
 [dependencies]
 thiserror = "2.0.17"
-sexpr = { version = "1.0.0", path = "../sexpr" }
+sexpr_parse = { version = "1.0.0", path = "../sexpr_parse" }

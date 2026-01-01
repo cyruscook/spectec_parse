@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sexpr"
+name = "sexpr_parse"
 version = "1.0.0"
 dependencies = [
  "thiserror",
@@ -31,7 +31,7 @@ dependencies = [
 name = "spectec_ast"
 version = "1.0.0"
 dependencies = [
- "sexpr",
+ "sexpr_parse",
  "spectec_ast_decode",
  "spectec_ast_decode_derive",
  "thiserror",
@@ -41,7 +41,7 @@ dependencies = [
 name = "spectec_ast_decode"
 version = "1.0.0"
 dependencies = [
- "sexpr",
+ "sexpr_parse",
  "thiserror",
 ]
 

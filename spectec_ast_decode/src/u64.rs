@@ -7,11 +7,11 @@ fn parse_u64_str(s: &str) -> Result<u64, std::num::ParseIntError> {
 }
 
 impl crate::Decode for u64 {
-    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+    fn decode<'a, I: Iterator<Item = &'a sexpr_parse::SExprItem>>(
         items: &mut std::iter::Peekable<I>,
     ) -> crate::Result<Self> {
         match items.next() {
-            Some(sexpr::SExprItem::Atom(t)) => {
+            Some(sexpr_parse::SExprItem::Atom(t)) => {
                 parse_u64_str(t).map_err(crate::Error::parse_int_err::<Self>)
             }
             Some(item) => Err(crate::Error::cannot_decode_sexpr::<Self>(item)),

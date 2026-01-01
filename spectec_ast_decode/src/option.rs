@@ -1,5 +1,5 @@
 impl<T: crate::Decode> crate::Decode for Option<T> {
-    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+    fn decode<'a, I: Iterator<Item = &'a sexpr_parse::SExprItem>>(
         items: &mut std::iter::Peekable<I>,
     ) -> crate::Result<Self> {
         if let Some(item) = items.peek()
