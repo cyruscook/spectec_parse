@@ -1,6 +1,6 @@
 [package]
 name = "spectec_ast_decode_derive"
-description = "Proc macro for generating decoding implementations for SpecTec AST s-expressions"
+description = "Proc macro for generating decoding implementations for SpecTec AST S-expressions"
 version = "1.0.0"
 edition = "2024"
 authors = ["cyruscook"]

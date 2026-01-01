@@ -1,6 +1,6 @@
 [package]
 name = "spectec_ast_decode"
-description = "Trait for decoding SpecTec AST s-expressions"
+description = "Trait for decoding SpecTec AST S-expressions"
 version = "1.0.0"
 edition = "2024"
 authors = ["cyruscook"]

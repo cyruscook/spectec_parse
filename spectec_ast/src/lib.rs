@@ -27,7 +27,7 @@ pub use crate::{
 ///
 /// # Errors
 ///
-/// Will return an error if any of the s-expressions cannot be decoded, or if the s-expressions are
+/// Will return an error if any of the S-expressions cannot be decoded, or if the S-expressions are
 /// not a valid SpecTec AST stream.
 pub fn parse_spectec_stream(input: &str) -> crate::Result<Vec<SpecTecDef>> {
     let sexpr_items = sexpr_parse::parse_sexpr_stream(input)?;
