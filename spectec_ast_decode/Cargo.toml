@@ -1,12 +1,13 @@
 [package]
-name = "sexpr"
-description = "Parser for S-expressions"
+name = "spectec_ast_decode"
+description = "Trait for decoding SpecTec AST s-expressions"
 version = "1.0.0"
 edition = "2024"
 authors = ["cyruscook"]
 repository = "https://github.com/cyruscook/spectec_parse"
 license = "BSD-3-Clause"
-keywords = ["sexpr", "s-expression"]
+publish = false
 
 [dependencies]
 thiserror = "2.0.17"
+sexpr = { version = "1.0.0", path = "../sexpr" }

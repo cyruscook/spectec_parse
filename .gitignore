@@ -1,8 +1,8 @@
 /target
-/decode/target
-/decode_derive/target
 /sexpr/target
 /spectec_ast/target
+/spectec_ast_decode/target
+/spectec_ast_decode_derive/target
 /wasm_spec_ast/target
 
 # Debugging

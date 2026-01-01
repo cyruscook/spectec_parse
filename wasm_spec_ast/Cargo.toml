@@ -1,7 +1,12 @@
 [package]
 name = "wasm_spec_ast"
+description = "The WebAssembly spec as a SpecTec AST"
 version = "1.0.0"
 edition = "2024"
+authors = ["cyruscook"]
+repository = "https://github.com/cyruscook/spectec_parse"
+license = "BSD-3-Clause"
+keywords = ["wasm", "spectec"]
 
 [dependencies]
 spectec_ast = { version = "1.0.0", path = "../spectec_ast" }

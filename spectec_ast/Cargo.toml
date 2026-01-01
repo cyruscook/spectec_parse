@@ -1,10 +1,15 @@
 [package]
 name = "spectec_ast"
+description = "Parser for SpecTec ASTs in S-expression format"
 version = "1.0.0"
 edition = "2024"
+authors = ["cyruscook"]
+repository = "https://github.com/cyruscook/spectec_parse"
+license = "BSD-3-Clause"
+keywords = ["wasm", "spectec"]
 
 [dependencies]
-decode_derive = { version = "1.0.0", path = "../decode_derive" }
-decode = { version = "1.0.0", path = "../decode" }
+decode_derive = { package = "spectec_ast_decode_derive", version = "1.0.0", path = "../spectec_ast_decode_derive" }
+decode = { package = "spectec_ast_decode", version = "1.0.0", path = "../spectec_ast_decode" }
 sexpr = { version = "1.0.0", path = "../sexpr" }
 thiserror = "2.0.17"

@@ -1,0 +1,18 @@
+[package]
+name = "spectec_ast_decode_derive"
+description = "Proc macro for generating decoding implementations for SpecTec AST s-expressions"
+version = "1.0.0"
+edition = "2024"
+authors = ["cyruscook"]
+repository = "https://github.com/cyruscook/spectec_parse"
+license = "BSD-3-Clause"
+publish = false
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0.103"
+quote = "1.0.42"
+syn = "2.0.111"
+synstructure = "0.13.2"

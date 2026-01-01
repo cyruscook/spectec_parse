@@ -1,3 +1,3 @@
 [workspace]
 resolver = "3"
-members = ["decode", "decode_derive", "sexpr", "spectec_ast", "wasm_spec_ast"]
+members = ["sexpr", "spectec_ast", "spectec_ast_decode", "spectec_ast_decode_derive", "wasm_spec_ast"]
