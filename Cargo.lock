@@ -3,6 +3,24 @@
 version = 4
 
 [[package]]
+name = "decode"
+version = "0.1.0"
+dependencies = [
+ "sexpr",
+ "thiserror",
+]
+
+[[package]]
+name = "decode_derive"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+ "synstructure",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -28,30 +46,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "spectec-decode"
-version = "0.1.0"
-dependencies = [
- "sexpr",
- "thiserror",
-]
-
-[[package]]
-name = "spectec-derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
- "synstructure",
-]
-
-[[package]]
 name = "spectec_ast"
 version = "0.1.0"
 dependencies = [
+ "decode",
+ "decode_derive",
  "sexpr",
- "spectec-decode",
- "spectec-derive",
  "thiserror",
 ]
 

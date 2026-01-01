@@ -12,12 +12,12 @@ mod r#box;
 mod decode;
 mod error;
 mod i64;
-mod iter;
 mod option;
 mod string;
 mod u64;
+mod vec;
 
 #[allow(unused)]
 pub use crate::{
-    bool::*, r#box::*, decode::*, error::*, i64::*, iter::*, option::*, string::*, u64::*,
+    bool::*, r#box::*, decode::*, error::*, i64::*, option::*, string::*, u64::*, vec::*,
 };

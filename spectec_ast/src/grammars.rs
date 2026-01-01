@@ -1,44 +1,33 @@
 use crate::{SpecTecArg, SpecTecExp, SpecTecIter, SpecTecIterExp};
-use spectec_derive::SpecTecItem;
+use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L149>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SExprDecode, Debug, PartialEq)]
 pub enum SpecTecSym {
-    #[spectec_node(name = "var")]
-    Var {
-        x: String,
-        #[spectec_field(vec = true)]
-        as1: Vec<SpecTecArg>,
-    },
-    #[spectec_node(name = "num")]
+    #[sexpr_node(name = "var")]
+    Var { x: String, as1: Vec<SpecTecArg> },
+    #[sexpr_node(name = "num")]
     Num { n: i64 },
-    #[spectec_node(name = "text")]
+    #[sexpr_node(name = "text")]
     Text { t: String },
-    #[spectec_atom(name = "eps")]
+    #[sexpr_atom(name = "eps")]
     Eps,
-    #[spectec_node(name = "seq")]
-    Seq {
-        #[spectec_field(vec = true)]
-        gs: Vec<SpecTecSym>,
-    },
-    #[spectec_node(name = "alt")]
-    Alt {
-        #[spectec_field(vec = true)]
-        gs: Vec<SpecTecSym>,
-    },
-    #[spectec_node(name = "range")]
+    #[sexpr_node(name = "seq")]
+    Seq { gs: Vec<SpecTecSym> },
+    #[sexpr_node(name = "alt")]
+    Alt { gs: Vec<SpecTecSym> },
+    #[sexpr_node(name = "range")]
     Range {
         g1: Box<SpecTecSym>,
         g2: Box<SpecTecSym>,
     },
-    #[spectec_node(name = "iter")]
+    #[sexpr_node(name = "iter")]
     Iter {
         g1: Box<SpecTecSym>,
         it: SpecTecIter,
-        #[spectec_field(vec = true)]
         xes: Vec<SpecTecIterExp>,
     },
-    #[spectec_node(name = "attr")]
+    #[sexpr_node(name = "attr")]
     Attr { e: SpecTecExp, g1: Box<SpecTecSym> },
 }

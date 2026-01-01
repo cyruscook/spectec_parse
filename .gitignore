@@ -1,6 +1,6 @@
 /target
 /decode/target
-/derive/target
+/decode_derive/target
 /sexpr/target
 /spectec_ast/target
 /wasm_spec_ast/target

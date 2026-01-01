@@ -1,8 +1,4 @@
-use crate::decode::Decode;
-use crate::error::DecodeError;
-use std::num::ParseIntError;
-
-fn parse_i64_str(s: &str) -> Result<i64, ParseIntError> {
+fn parse_i64_str(s: &str) -> Result<i64, std::num::ParseIntError> {
     if let Some(stripped) = s.strip_prefix("0x") {
         i64::from_str_radix(stripped, 16)
     } else {
@@ -10,19 +6,16 @@ fn parse_i64_str(s: &str) -> Result<i64, ParseIntError> {
     }
 }
 
-impl Decode for i64 {
-    fn can_decode(item: &sexpr::SExprItem) -> bool {
-        match item {
-            sexpr::SExprItem::Atom(t) => parse_i64_str(t).is_ok(),
-            _ => false,
+impl crate::Decode for i64 {
+    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+        items: &mut std::iter::Peekable<I>,
+    ) -> crate::Result<Self> {
+        match items.next() {
+            Some(sexpr::SExprItem::Atom(t)) => {
+                parse_i64_str(t).map_err(crate::Error::parse_int_err::<Self>)
+            }
+            Some(item) => Err(crate::Error::cannot_decode_sexpr::<Self>(item)),
+            None => Err(crate::Error::required_missing_sexpr::<Self>()),
         }
-    }
-
-    fn decode(item: sexpr::SExprItem) -> Result<Self, DecodeError> {
-        match item {
-            sexpr::SExprItem::Atom(t) => parse_i64_str(&t).map_err(DecodeError::from),
-            _ => Err(DecodeError::UnexpectedItem(item)),
-        }
-        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }

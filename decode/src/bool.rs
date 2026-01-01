@@ -1,19 +1,13 @@
-use crate::decode::Decode;
-use crate::error::DecodeError;
-
-impl Decode for bool {
-    fn can_decode(item: &sexpr::SExprItem) -> bool {
-        match item {
-            sexpr::SExprItem::Atom(t) => t.parse::<Self>().is_ok(),
-            _ => false,
+impl crate::Decode for bool {
+    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+        items: &mut std::iter::Peekable<I>,
+    ) -> crate::Result<Self> {
+        match items.next() {
+            Some(sexpr::SExprItem::Atom(t)) => {
+                t.parse().map_err(crate::Error::parse_bool_err::<Self>)
+            }
+            Some(item) => Err(crate::Error::cannot_decode_sexpr::<Self>(item)),
+            None => Err(crate::Error::required_missing_sexpr::<Self>()),
         }
-    }
-
-    fn decode(item: sexpr::SExprItem) -> Result<Self, DecodeError> {
-        match item {
-            sexpr::SExprItem::Atom(t) => t.parse().map_err(DecodeError::from),
-            _ => Err(DecodeError::UnexpectedItem(item)),
-        }
-        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }

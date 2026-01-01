@@ -1,21 +1,16 @@
 use crate::SpecTecExp;
-use spectec_derive::SpecTecItem;
+use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#58>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SExprDecode, Debug, PartialEq)]
 pub enum SpecTecIter {
-    #[spectec_atom(name = "opt")]
+    #[sexpr_atom(name = "opt")]
     Opt,
-    #[spectec_atom(name = "list")]
+    #[sexpr_atom(name = "list")]
     List,
-    #[spectec_atom(name = "list1")]
+    #[sexpr_atom(name = "list1")]
     List1,
-    #[spectec_node(name = "listn")]
-    ListN {
-        #[spectec_field(vec = true)]
-        e: Vec<SpecTecExp>,
-        #[spectec_field(vec = true)]
-        xo: Vec<String>,
-    },
+    #[sexpr_node(name = "listn")]
+    ListN { e: Vec<SpecTecExp>, xo: Vec<String> },
 }

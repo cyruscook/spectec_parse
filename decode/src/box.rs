@@ -1,14 +1,9 @@
-use crate::decode::Decode;
-use crate::error::DecodeError;
-
-impl<T: Decode> Decode for Box<T> {
-    fn can_decode(item: &sexpr::SExprItem) -> bool {
-        T::can_decode(item)
-    }
-
-    fn decode(item: sexpr::SExprItem) -> Result<Self, DecodeError> {
-        T::decode(item).map(Self::new).map_err(|e| {
-            e.with_context(format!("while decoding {}", std::any::type_name::<Self>()))
-        })
+impl<T: crate::Decode> crate::Decode for Box<T> {
+    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+        items: &mut std::iter::Peekable<I>,
+    ) -> crate::Result<Self> {
+        T::decode(items)
+            .map(Self::new)
+            .map_err(crate::Error::wrapped::<Self>)
     }
 }

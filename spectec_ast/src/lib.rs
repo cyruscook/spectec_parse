@@ -8,6 +8,7 @@
 #![allow(clippy::doc_markdown, clippy::missing_errors_doc)]
 
 mod definitions;
+mod error;
 mod expressions;
 mod grammars;
 mod iterations;
@@ -18,8 +19,8 @@ mod premises;
 mod types;
 
 pub use crate::{
-    definitions::*, expressions::*, grammars::*, iterations::*, literal::*, nativetypes::*,
-    operators::*, premises::*, types::*,
+    definitions::*, error::*, expressions::*, grammars::*, iterations::*, literal::*,
+    nativetypes::*, operators::*, premises::*, types::*,
 };
 
 /// Parses a SpecTec AST stream from the input string.
@@ -28,27 +29,22 @@ pub use crate::{
 ///
 /// Will return an error if any of the s-expressions cannot be decoded, or if the s-expressions are
 /// not a valid SpecTec AST stream.
-pub fn parse_spectec_stream(input: &str) -> Result<Vec<SpecTecDef>, spectec_decode::DecodeError> {
+pub fn parse_spectec_stream(input: &str) -> crate::Result<Vec<SpecTecDef>> {
     let sexpr_items = sexpr::parse_sexpr_stream(input)?;
-    let mut parsed = Vec::new();
-    for item in sexpr_items {
-        parsed.push(spectec_decode::Decode::decode(item)?);
-    }
-    Ok(parsed)
+    decode::Decode::decode(&mut sexpr_items.iter().peekable()).map_err(crate::Error::from)
 }
 
 #[cfg(test)]
 mod test {
     use crate::*;
+    use decode_derive::SExprDecode;
     use sexpr::parse_sexpr_stream;
-    use spectec_decode::Decode;
-    use spectec_derive::SpecTecItem;
 
     #[test]
     fn test_extra_string() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
+            #[sexpr_node(name = "a")]
             A { b: String },
         }
 
@@ -57,26 +53,21 @@ mod test {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
-        for sexpr in sexprs {
-            assert!(!TestEnum::can_decode(&sexpr));
-            let parsed = TestEnum::decode(sexpr);
-            assert!(parsed.is_err());
-            assert_eq!(
-                parsed.unwrap_err().to_string(),
-                "while decoding spectec_ast::test::test_extra_string::TestEnum: decoding variant A item not consumed by fields (A { b: \"m\" }): Unexpected item 'Text(\"c\")'"
-            );
-        }
+        let parsed: decode::Result<TestEnum> =
+            decode::Decode::decode(&mut sexprs.iter().peekable());
+        assert!(parsed.is_err());
+        assert_eq!(
+            parsed.unwrap_err().to_string(),
+            "Error decoding spectec_ast::test::test_extra_string::TestEnum::A: Extra unparsed S-expression remaining: Text(\"c\")"
+        );
     }
 
     #[test]
     fn test_extra_item() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
-            A {
-                #[spectec_field(vec = true)]
-                b: Vec<TestEnum>,
-            },
+            #[sexpr_node(name = "a")]
+            A { b: Vec<TestEnum> },
         }
 
         let input = r#"(a (a) (a) (b))"#;
@@ -84,22 +75,21 @@ mod test {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
-        for sexpr in sexprs {
-            assert!(!TestEnum::can_decode(&sexpr));
-            let parsed = TestEnum::decode(sexpr);
-            assert!(parsed.is_err());
-            assert_eq!(
-                parsed.unwrap_err().to_string(),
-                "while decoding spectec_ast::test::test_extra_item::TestEnum: decoding variant A item not consumed by fields (A { b: [A { b: [] }, A { b: [] }] }): Unexpected item 'Node(\"b\", [])'"
-            );
-        }
+        let parsed: decode::Result<TestEnum> =
+            decode::Decode::decode(&mut sexprs.iter().peekable());
+        dbg!(&parsed);
+        assert!(parsed.is_err());
+        assert_eq!(
+            parsed.unwrap_err().to_string(),
+            "Error decoding spectec_ast::test::test_extra_item::TestEnum::A: Extra unparsed S-expression remaining: Node(\"b\", [])"
+        );
     }
 
     #[test]
     fn test_extra_item_unit() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
+            #[sexpr_node(name = "a")]
             A,
         }
 
@@ -108,26 +98,21 @@ mod test {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
-        for sexpr in sexprs {
-            assert!(!TestEnum::can_decode(&sexpr));
-            let parsed = TestEnum::decode(sexpr);
-            assert!(parsed.is_err());
-            assert_eq!(
-                parsed.unwrap_err().to_string(),
-                "while decoding spectec_ast::test::test_extra_item_unit::TestEnum: decoding variant A unit type should have no items: Unexpected item 'Node(\"b\", [])'"
-            );
-        }
+        let parsed: decode::Result<TestEnum> =
+            decode::Decode::decode(&mut sexprs.iter().peekable());
+        assert!(parsed.is_err());
+        assert_eq!(
+            parsed.unwrap_err().to_string(),
+            "Error decoding spectec_ast::test::test_extra_item_unit::TestEnum::A: Extra unparsed S-expression remaining: Node(\"b\", [])"
+        );
     }
 
     #[test]
     fn test_incompat_item() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
-            A {
-                #[spectec_field(vec = true)]
-                b: Vec<TestEnum>,
-            },
+            #[sexpr_node(name = "a")]
+            A { b: Vec<TestEnum> },
         }
 
         let input = r#"(a "a")"#;
@@ -135,39 +120,34 @@ mod test {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
-        for sexpr in sexprs {
-            assert!(!TestEnum::can_decode(&sexpr));
-            let parsed = TestEnum::decode(sexpr);
-            assert!(parsed.is_err());
-            assert_eq!(
-                parsed.unwrap_err().to_string(),
-                "while decoding spectec_ast::test::test_incompat_item::TestEnum: decoding variant A item not consumed by fields (A { b: [] }): Unexpected item 'Text(\"a\")'"
-            );
-        }
+        let parsed: decode::Result<TestEnum> =
+            decode::Decode::decode(&mut sexprs.iter().peekable());
+        assert!(parsed.is_err());
+        assert_eq!(
+            parsed.unwrap_err().to_string(),
+            "Error decoding spectec_ast::test::test_incompat_item::TestEnum::A: Extra unparsed S-expression remaining: Text(\"a\")"
+        );
     }
 
     #[test]
     fn test_spectec_vec() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
-            A {
-                #[spectec_field(vec = true)]
-                b: Vec<TestEnum2>,
-            },
+            #[sexpr_node(name = "a")]
+            A { b: Vec<TestEnum2> },
         }
 
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum2 {
-            #[spectec_atom(name = "not")]
+            #[sexpr_atom(name = "not")]
             Not,
-            #[spectec_atom(name = "plus")]
+            #[sexpr_atom(name = "plus")]
             Plus,
-            #[spectec_atom(name = "minus")]
+            #[sexpr_atom(name = "minus")]
             Minus,
-            #[spectec_atom(name = "plusminus")]
+            #[sexpr_atom(name = "plusminus")]
             PlusMinus,
-            #[spectec_atom(name = "minusplus")]
+            #[sexpr_atom(name = "minusplus")]
             MinusPlus,
         }
 
@@ -176,16 +156,10 @@ mod test {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
-        let parsed = sexprs
-            .into_iter()
-            .map(|sexpr| {
-                assert!(TestEnum::can_decode(&sexpr));
-                match TestEnum::decode(sexpr) {
-                    Ok(p) => p,
-                    Err(e) => panic!("{}", e),
-                }
-            })
-            .collect::<Vec<_>>();
+        let parsed: Vec<TestEnum> = match decode::Decode::decode(&mut sexprs.iter().peekable()) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
         assert_eq!(
             parsed,
             vec![TestEnum::A {
@@ -202,19 +176,19 @@ mod test {
 
     #[test]
     fn test_spectec_atom_unnamed() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
+            #[sexpr_node(name = "a")]
             A { b: TestEnum2 },
         }
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum2 {
-            #[spectec_atom()]
+            #[sexpr_atom()]
             C(TestEnum3),
         }
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum3 {
-            #[spectec_atom(name = "d")]
+            #[sexpr_atom(name = "d")]
             D,
         }
 
@@ -223,16 +197,10 @@ mod test {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
-        let parsed = sexprs
-            .into_iter()
-            .map(|sexpr| {
-                assert!(TestEnum::can_decode(&sexpr));
-                match TestEnum::decode(sexpr) {
-                    Ok(p) => p,
-                    Err(e) => panic!("{}", e),
-                }
-            })
-            .collect::<Vec<_>>();
+        let parsed: Vec<TestEnum> = match decode::Decode::decode(&mut sexprs.iter().peekable()) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
         assert_eq!(
             parsed,
             vec![TestEnum::A {
@@ -243,9 +211,9 @@ mod test {
 
     #[test]
     fn test_spectec_node_unnamed_fields() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
+            #[sexpr_node(name = "a")]
             A(u64),
         }
 
@@ -255,30 +223,21 @@ mod test {
             Err(e) => panic!("{}", e),
         };
 
-        let parsed = sexprs
-            .into_iter()
-            .map(|sexpr| {
-                assert!(TestEnum::can_decode(&sexpr));
-                match TestEnum::decode(sexpr) {
-                    Ok(p) => p,
-                    Err(e) => panic!("{}", e),
-                }
-            })
-            .collect::<Vec<_>>();
+        let parsed: Vec<TestEnum> = match decode::Decode::decode(&mut sexprs.iter().peekable()) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
         assert_eq!(parsed, vec![TestEnum::A(0)]);
     }
 
     #[test]
     fn test_spectec_node_option_named_field() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
+            #[sexpr_node(name = "a")]
             A {
-                #[spectec_field(option = true)]
                 b: Option<u64>,
-                #[spectec_field(option = true)]
                 c: Option<u64>,
-                #[spectec_field(option = true)]
                 d: Option<bool>,
             },
         }
@@ -289,16 +248,10 @@ mod test {
             Err(e) => panic!("{}", e),
         };
 
-        let parsed = sexprs
-            .into_iter()
-            .map(|sexpr| {
-                assert!(TestEnum::can_decode(&sexpr));
-                match TestEnum::decode(sexpr) {
-                    Ok(p) => p,
-                    Err(e) => panic!("{}", e),
-                }
-            })
-            .collect::<Vec<_>>();
+        let parsed: Vec<TestEnum> = match decode::Decode::decode(&mut sexprs.iter().peekable()) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
         assert_eq!(
             parsed,
             vec![TestEnum::A {
@@ -311,10 +264,10 @@ mod test {
 
     #[test]
     fn test_spectec_node_option_unnamed_field() {
-        #[derive(SpecTecItem, Debug, PartialEq)]
+        #[derive(SExprDecode, Debug, PartialEq)]
         pub enum TestEnum {
-            #[spectec_node(name = "a")]
-            A(#[spectec_field(option = true)] Option<u64>),
+            #[sexpr_node(name = "a")]
+            A(Option<u64>),
         }
 
         let input = r#"(a)"#;
@@ -323,16 +276,10 @@ mod test {
             Err(e) => panic!("{}", e),
         };
 
-        let parsed = sexprs
-            .into_iter()
-            .map(|sexpr| {
-                assert!(TestEnum::can_decode(&sexpr));
-                match TestEnum::decode(sexpr) {
-                    Ok(p) => p,
-                    Err(e) => panic!("{}", e),
-                }
-            })
-            .collect::<Vec<_>>();
+        let parsed: Vec<TestEnum> = match decode::Decode::decode(&mut sexprs.iter().peekable()) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
         assert_eq!(parsed, vec![TestEnum::A(None)]);
     }
 
@@ -343,16 +290,10 @@ mod test {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
         };
-        let parsed = sexprs
-            .into_iter()
-            .map(|sexpr| {
-                assert!(SpecTecDef::can_decode(&sexpr));
-                match SpecTecDef::decode(sexpr) {
-                    Ok(p) => p,
-                    Err(e) => panic!("{}", e),
-                }
-            })
-            .collect::<Vec<_>>();
+        let parsed: Vec<SpecTecDef> = match decode::Decode::decode(&mut sexprs.iter().peekable()) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
         assert_eq!(
             parsed,
             vec![SpecTecDef::Typ {

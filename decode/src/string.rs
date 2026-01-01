@@ -1,16 +1,11 @@
-use crate::decode::Decode;
-use crate::error::DecodeError;
-
-impl Decode for String {
-    fn can_decode(item: &sexpr::SExprItem) -> bool {
-        matches!(item, sexpr::SExprItem::Text(_))
-    }
-
-    fn decode(item: sexpr::SExprItem) -> Result<Self, DecodeError> {
-        match item {
-            sexpr::SExprItem::Text(t) => Ok(t),
-            _ => Err(DecodeError::UnexpectedItem(item)),
+impl crate::Decode for String {
+    fn decode<'a, I: Iterator<Item = &'a sexpr::SExprItem>>(
+        items: &mut std::iter::Peekable<I>,
+    ) -> crate::Result<Self> {
+        match items.next() {
+            Some(sexpr::SExprItem::Text(t)) => Ok(t.clone()),
+            Some(item) => Err(crate::Error::cannot_decode_sexpr::<Self>(item)),
+            None => Err(crate::Error::required_missing_sexpr::<Self>()),
         }
-        .map_err(|e| e.with_context(format!("while decoding {}", std::any::type_name::<Self>())))
     }
 }

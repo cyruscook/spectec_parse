@@ -1,61 +1,61 @@
-use spectec_derive::SpecTecItem;
+use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#28>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SExprDecode, Debug, PartialEq)]
 pub enum SpecTecUnOp {
-    #[spectec_atom(name = "not")]
+    #[sexpr_atom(name = "not")]
     Not,
-    #[spectec_atom(name = "plus")]
+    #[sexpr_atom(name = "plus")]
     Plus,
-    #[spectec_atom(name = "minus")]
+    #[sexpr_atom(name = "minus")]
     Minus,
-    #[spectec_atom(name = "plusminus")]
+    #[sexpr_atom(name = "plusminus")]
     PlusMinus,
-    #[spectec_atom(name = "minusplus")]
+    #[sexpr_atom(name = "minusplus")]
     MinusPlus,
 }
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#35>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SExprDecode, Debug, PartialEq)]
 pub enum SpecTecBinOp {
-    #[spectec_atom(name = "and")]
+    #[sexpr_atom(name = "and")]
     And,
-    #[spectec_atom(name = "or")]
+    #[sexpr_atom(name = "or")]
     Or,
-    #[spectec_atom(name = "impl")]
+    #[sexpr_atom(name = "impl")]
     Impl,
-    #[spectec_atom(name = "equiv")]
+    #[sexpr_atom(name = "equiv")]
     Equiv,
-    #[spectec_atom(name = "add")]
+    #[sexpr_atom(name = "add")]
     Add,
-    #[spectec_atom(name = "sub")]
+    #[sexpr_atom(name = "sub")]
     Sub,
-    #[spectec_atom(name = "mul")]
+    #[sexpr_atom(name = "mul")]
     Mul,
-    #[spectec_atom(name = "div")]
+    #[sexpr_atom(name = "div")]
     Div,
-    #[spectec_atom(name = "mod")]
+    #[sexpr_atom(name = "mod")]
     Mod,
-    #[spectec_atom(name = "pow")]
+    #[sexpr_atom(name = "pow")]
     Pow,
 }
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#47>
 #[allow(unused)]
-#[derive(SpecTecItem, Debug, PartialEq)]
+#[derive(SExprDecode, Debug, PartialEq)]
 pub enum SpecTecCmpOp {
-    #[spectec_atom(name = "eq")]
+    #[sexpr_atom(name = "eq")]
     Eq,
-    #[spectec_atom(name = "ne")]
+    #[sexpr_atom(name = "ne")]
     Ne,
-    #[spectec_atom(name = "lt")]
+    #[sexpr_atom(name = "lt")]
     Lt,
-    #[spectec_atom(name = "gt")]
+    #[sexpr_atom(name = "gt")]
     Gt,
-    #[spectec_atom(name = "le")]
+    #[sexpr_atom(name = "le")]
     Le,
-    #[spectec_atom(name = "ge")]
+    #[sexpr_atom(name = "ge")]
     Ge,
 }
