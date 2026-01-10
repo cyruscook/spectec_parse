@@ -7,6 +7,8 @@
 )]
 #![allow(clippy::doc_markdown, clippy::missing_errors_doc)]
 
+pub use spectec_ast;
+
 const WASM_AST_STR: &str = include_str!("./wasm-3.0.spectec-ast");
 
 /// Returns the WASM SpecTec AST
