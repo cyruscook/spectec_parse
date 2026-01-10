@@ -6,7 +6,7 @@ use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#101>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecExp {
     #[sexpr_node(name = "var")]
     Var { id: String },
@@ -120,7 +120,7 @@ pub enum SpecTecExp {
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#133>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecExpField {
     #[sexpr_node(name = "field")]
     Field { at: MixOp, e: SpecTecExp },
@@ -128,7 +128,7 @@ pub enum SpecTecExpField {
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#136>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecPath {
     #[sexpr_atom(name = "root")]
     Root,
@@ -147,7 +147,7 @@ pub enum SpecTecPath {
 // Usage of this type must be preceded with a `crate::spectec::iterations::SpecTecIter` value, not included here
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#143>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecIterExp {
     #[sexpr_node(name = "dom")]
     Dom { x: String, e: SpecTecExp },

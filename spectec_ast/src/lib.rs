@@ -42,7 +42,7 @@ mod test {
 
     #[test]
     fn test_extra_string() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A { b: String },
@@ -64,7 +64,7 @@ mod test {
 
     #[test]
     fn test_extra_item() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A { b: Vec<TestEnum> },
@@ -87,7 +87,7 @@ mod test {
 
     #[test]
     fn test_extra_item_unit() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A,
@@ -109,7 +109,7 @@ mod test {
 
     #[test]
     fn test_incompat_item() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A { b: Vec<TestEnum> },
@@ -131,13 +131,13 @@ mod test {
 
     #[test]
     fn test_spectec_vec() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A { b: Vec<TestEnum2> },
         }
 
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum2 {
             #[sexpr_atom(name = "not")]
             Not,
@@ -176,17 +176,17 @@ mod test {
 
     #[test]
     fn test_spectec_atom_unnamed() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A { b: TestEnum2 },
         }
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum2 {
             #[sexpr_atom()]
             C(TestEnum3),
         }
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum3 {
             #[sexpr_atom(name = "d")]
             D,
@@ -211,7 +211,7 @@ mod test {
 
     #[test]
     fn test_spectec_node_unnamed_fields() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A(u64),
@@ -232,7 +232,7 @@ mod test {
 
     #[test]
     fn test_spectec_node_option_named_field() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A {
@@ -264,7 +264,7 @@ mod test {
 
     #[test]
     fn test_spectec_node_option_unnamed_field() {
-        #[derive(SExprDecode, Debug, PartialEq)]
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {
             #[sexpr_node(name = "a")]
             A(Option<u64>),

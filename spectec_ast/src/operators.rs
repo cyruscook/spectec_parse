@@ -2,7 +2,7 @@ use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#28>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecUnOp {
     #[sexpr_atom(name = "not")]
     Not,
@@ -18,7 +18,7 @@ pub enum SpecTecUnOp {
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#35>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecBinOp {
     #[sexpr_atom(name = "and")]
     And,
@@ -44,7 +44,7 @@ pub enum SpecTecBinOp {
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#47>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecCmpOp {
     #[sexpr_atom(name = "eq")]
     Eq,

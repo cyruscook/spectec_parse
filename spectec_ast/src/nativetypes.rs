@@ -2,7 +2,7 @@ use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/xl/bool.ml#L9>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecBoolTyp {
     #[sexpr_atom(name = "bool")]
     Bool,
@@ -10,7 +10,7 @@ pub enum SpecTecBoolTyp {
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/xl/num.ml#L27>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecNumTyp {
     #[sexpr_atom(name = "nat")]
     Nat,

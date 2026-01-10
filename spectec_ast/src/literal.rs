@@ -1,7 +1,7 @@
 use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L14>
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MixOp(Vec<String>);
 
 impl decode::Decode for MixOp {
@@ -20,7 +20,7 @@ impl decode::Decode for MixOp {
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#19>
 #[allow(unused)]
-#[derive(SExprDecode, Debug, PartialEq)]
+#[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecNum {
     #[sexpr_node(name = "nat")]
     Nat(u64),
