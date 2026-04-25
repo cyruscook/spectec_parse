@@ -4,6 +4,23 @@ use decode_derive::SExprDecode;
 #[derive(Clone, Debug, PartialEq)]
 pub struct MixOp(Vec<String>);
 
+impl MixOp {
+    #[must_use]
+    pub fn new(fragments: Vec<String>) -> Self {
+        Self(fragments)
+    }
+
+    #[must_use]
+    pub fn fragments(&self) -> &[String] {
+        &self.0
+    }
+
+    #[must_use]
+    pub fn into_fragments(self) -> Vec<String> {
+        self.0
+    }
+}
+
 impl decode::Decode for MixOp {
     fn decode<'a, I: Iterator<Item = &'a sexpr_parse::SExprItem>>(
         items: &mut std::iter::Peekable<I>,
