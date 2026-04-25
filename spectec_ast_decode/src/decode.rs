@@ -9,3 +9,21 @@ pub trait Decode: Sized {
         items: &mut std::iter::Peekable<I>,
     ) -> crate::Result<Self>;
 }
+
+/// Attempts to decode `T` from a single item and reports success only if `T`
+/// consumed that item completely.
+///
+/// This is stricter than treating any `Ok(T)` as a match: nested greedy
+/// decoders such as `Vec<_>` or `Option<_>` can return success without
+/// consuming input, which must not be interpreted as presence by outer greedy
+/// decoders.
+pub(crate) fn probe_one<'a, T: Decode>(item: &'a sexpr_parse::SExprItem) -> Option<T> {
+    let mut probe = std::iter::once(item).peekable();
+    let out = T::decode(&mut probe).ok()?;
+
+    if probe.peek().is_none() {
+        Some(out)
+    } else {
+        None
+    }
+}

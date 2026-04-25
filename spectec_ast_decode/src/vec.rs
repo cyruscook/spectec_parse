@@ -4,7 +4,7 @@ impl<T: crate::Decode> crate::Decode for Vec<T> {
     ) -> crate::Result<Self> {
         let mut parsed = Vec::new();
         while let Some(item) = items.peek() {
-            if let Ok(out) = T::decode(&mut std::iter::once(*item).peekable()) {
+            if let Some(out) = crate::probe_one::<T>(item) {
                 // We know that an item is available due to the success of the peek call
                 #[allow(clippy::unwrap_used)]
                 items.next().unwrap();
