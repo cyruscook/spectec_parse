@@ -21,6 +21,10 @@ pub enum SExprError {
         expected: u8,
         position: usize,
     },
+    #[error("expected symbol at {position}")]
+    ExpectedSymbol { position: usize },
+    #[error("missing separator before byte {unexpected:#x} at {position}")]
+    MissingSeparator { unexpected: u8, position: usize },
     #[error("{context}: {source}")]
     WithContext {
         #[source]

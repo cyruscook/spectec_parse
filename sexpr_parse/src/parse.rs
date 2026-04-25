@@ -26,6 +26,7 @@ fn read_symbol(r: &mut Reader) -> Result<String, SExprError> {
             && !c.is_ascii_whitespace()
             && c != b'('
             && c != b')'
+            && c != b'"'
         {
             buf.push(c);
             r.advance(1).map_err(|e| SExprError::Io {
@@ -40,6 +41,17 @@ fn read_symbol(r: &mut Reader) -> Result<String, SExprError> {
         source: e,
         position: r.position(),
     })
+}
+
+fn ensure_item_boundary(r: &Reader) -> Result<(), SExprError> {
+    match r.peek() {
+        None | Some(b')') => Ok(()),
+        Some(c) if c.is_ascii_whitespace() => Ok(()),
+        Some(unexpected) => Err(SExprError::MissingSeparator {
+            unexpected,
+            position: r.position(),
+        }),
+    }
 }
 
 fn read_required_byte(r: &mut Reader, expected: u8) -> Result<(), SExprError> {
@@ -91,6 +103,12 @@ fn read_node(reader: &mut Reader) -> Result<SExprItem, SExprError> {
         .map_err(|err| err.with_context("parsing beginning of new node"))?;
     // Read symbol
     let name = read_symbol(reader)?;
+    if name.is_empty() {
+        return Err(SExprError::ExpectedSymbol {
+            position: reader.position(),
+        });
+    }
+    ensure_item_boundary(reader)?;
     let mut items = Vec::new();
     loop {
         reader.consume_whitespace().map_err(|err| SExprError::Io {
@@ -113,12 +131,15 @@ fn read_node(reader: &mut Reader) -> Result<SExprItem, SExprError> {
             }
             Some(b'(') => {
                 items.push(read_node(reader)?);
+                ensure_item_boundary(reader)?;
             }
             Some(b'"') => {
                 items.push(SExprItem::Text(read_text(reader)?));
+                ensure_item_boundary(reader)?;
             }
             _ => {
                 items.push(SExprItem::Atom(read_symbol(reader)?));
+                ensure_item_boundary(reader)?;
             }
         }
     }
@@ -178,6 +199,25 @@ mod test {
                     )
                 ]
             )]
+        );
+    }
+
+    #[test]
+    fn test_rejects_node_with_empty_name() {
+        for input in ["()", "( )"] {
+            assert!(
+                parse_sexpr_stream(input).is_err(),
+                "expected malformed node to be rejected: {input:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn test_rejects_missing_separator_between_node_name_and_text() {
+        let input = r#"(typ"m")"#;
+        assert!(
+            parse_sexpr_stream(input).is_err(),
+            "expected malformed node to be rejected: {input:?}"
         );
     }
 }
