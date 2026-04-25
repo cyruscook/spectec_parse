@@ -157,7 +157,17 @@ pub fn parse_sexpr_stream(input: &str) -> Result<Vec<SExprItem>, SExprError> {
         if reader.is_eof() {
             break;
         }
-        out.push(read_node(&mut reader)?);
+        let item = match reader.peek() {
+            Some(b'(') => read_node(&mut reader),
+            Some(b'"') => Ok(SExprItem::Text(read_text(&mut reader)?)),
+            Some(_) => Ok(SExprItem::Atom(read_symbol(&mut reader)?)),
+            None => Err(SExprError::Io {
+                source: std::io::Error::from(std::io::ErrorKind::UnexpectedEof),
+                position: reader.position(),
+            }),
+        }?;
+        out.push(item);
+        ensure_item_boundary(&reader)?;
     }
 
     Ok(out)
@@ -199,6 +209,22 @@ mod test {
                     )
                 ]
             )]
+        );
+    }
+
+    #[test]
+    fn test_parse_top_level_atom_and_text_items() {
+        let input = "foo \"bar\"";
+        let parsed = match parse_sexpr_stream(input) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
+        assert_eq!(
+            parsed,
+            vec![
+                SExprItem::Atom("foo".to_string()),
+                SExprItem::Text("bar".to_string())
+            ]
         );
     }
 
