@@ -4,6 +4,7 @@
     clippy::panic,
     clippy::pedantic
 )]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used, clippy::panic))]
 #![allow(clippy::doc_markdown, clippy::missing_errors_doc)]
 
 extern crate proc_macro;

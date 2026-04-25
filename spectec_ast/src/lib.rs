@@ -5,6 +5,7 @@
     clippy::panic,
     clippy::pedantic
 )]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used, clippy::panic))]
 #![allow(clippy::doc_markdown, clippy::missing_errors_doc)]
 
 mod definitions;
@@ -70,7 +71,7 @@ mod test {
             A { b: Vec<TestEnum> },
         }
 
-        let input = r#"(a (a) (a) (b))"#;
+        let input = r"(a (a) (a) (b))";
         let sexprs = match parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
@@ -93,7 +94,7 @@ mod test {
             A,
         }
 
-        let input = r#"(a (b))"#;
+        let input = r"(a (b))";
         let sexprs = match parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
@@ -151,7 +152,7 @@ mod test {
             MinusPlus,
         }
 
-        let input = r#"(a minus minusplus not plus plusminus)"#;
+        let input = r"(a minus minusplus not plus plusminus)";
         let sexprs = match parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
@@ -192,7 +193,7 @@ mod test {
             D,
         }
 
-        let input = r#"(a d)"#;
+        let input = r"(a d)";
         let sexprs = match parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
@@ -217,7 +218,7 @@ mod test {
             A(u64),
         }
 
-        let input = r#"(a 0)"#;
+        let input = r"(a 0)";
         let sexprs = match parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
@@ -242,7 +243,7 @@ mod test {
             },
         }
 
-        let input = r#"(a 0 false)"#;
+        let input = r"(a 0 false)";
         let sexprs = match parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
@@ -270,7 +271,7 @@ mod test {
             A(Option<u64>),
         }
 
-        let input = r#"(a)"#;
+        let input = r"(a)";
         let sexprs = match parse_sexpr_stream(input) {
             Ok(p) => p,
             Err(e) => panic!("{}", e),
