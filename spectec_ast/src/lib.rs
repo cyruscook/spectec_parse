@@ -32,7 +32,15 @@ pub use crate::{
 /// not a valid SpecTec AST stream.
 pub fn parse_spectec_stream(input: &str) -> crate::Result<Vec<SpecTecDef>> {
     let sexpr_items = sexpr_parse::parse_sexpr_stream(input)?;
-    decode::Decode::decode(&mut sexpr_items.iter().peekable()).map_err(crate::Error::from)
+    let mut items = sexpr_items.iter().peekable();
+    let parsed = decode::Decode::decode(&mut items).map_err(crate::Error::from)?;
+    // Ensure we consumed all the available items
+    if let Some(item) = items.peek() {
+        return Err(crate::Error::from(decode::Error::unparsed_sexpr::<
+            Vec<SpecTecDef>,
+        >(item)));
+    }
+    Ok(parsed)
 }
 
 #[cfg(test)]
@@ -347,6 +355,20 @@ mod test {
                     ps: vec![],
                 },
             ]
+        );
+    }
+
+    #[test]
+    fn test_parse_spectec_stream_rejects_trailing_invalid_item() {
+        let input = r#"
+(typ "m" (inst (alias nat)))
+(bad)
+"#;
+        let parsed = parse_spectec_stream(input);
+        assert!(parsed.is_err());
+        assert_eq!(
+            parsed.unwrap_err().to_string(),
+            "Error decoding SpecTec AST: Error decoding alloc::vec::Vec<spectec_ast::definitions::SpecTecDef>: Extra unparsed S-expression remaining: Node(\"bad\", [])"
         );
     }
 }
