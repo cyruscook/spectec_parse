@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "nano_wasm_spec_ast"
+version = "1.0.0"
+dependencies = [
+ "spectec_ast",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.104"
 source = "registry+https://github.com/rust-lang/crates.io-index"

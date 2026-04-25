@@ -1,0 +1,773 @@
+(typ "localidx" (inst (alias nat)))
+(typ "globalidx" (inst (alias nat)))
+(typ "mut" (inst (variant (case "MUT" (tup)))))
+(typ
+  "valtype"
+  (inst
+    (variant
+      (case "I32" (tup))
+      (case "I64" (tup))
+      (case "F32" (tup))
+      (case "F64" (tup))
+    )
+  )
+)
+(typ
+  "functype"
+  (inst
+    (variant
+      (case
+        "%->%"
+        (tup
+          (bind "valtype*" (iter (var "valtype") list))
+          (bind "valtype*" (iter (var "valtype") list))
+        )
+      )
+    )
+  )
+)
+(typ
+  "globaltype"
+  (inst
+    (variant
+      (case
+        "%%"
+        (tup
+          (bind "mut?" (iter (var "mut") opt))
+          (bind "valtype" (var "valtype"))
+        )
+      )
+    )
+  )
+)
+(typ "const" (inst (alias nat)))
+(typ
+  "instr"
+  (inst
+    (variant
+      (case "NOP" (tup))
+      (case "DROP" (tup))
+      (case "SELECT" (tup))
+      (case
+        "CONST"
+        (tup (bind "valtype" (var "valtype")) (bind "const" (var "const")))
+      )
+      (case "LOCAL.GET" (tup (bind "localidx" (var "localidx"))))
+      (case "LOCAL.SET" (tup (bind "localidx" (var "localidx"))))
+      (case "GLOBAL.GET" (tup (bind "globalidx" (var "globalidx"))))
+      (case "GLOBAL.SET" (tup (bind "globalidx" (var "globalidx"))))
+    )
+  )
+)
+(typ
+  "context"
+  (inst
+    (struct
+      (field "GLOBALS" (iter (var "globaltype") list))
+      (field "LOCALS" (iter (var "valtype") list))
+    )
+  )
+)
+(rel
+  "Instr_ok"
+  "%|-%:%"
+  (tup
+    (bind "_" (var "context"))
+    (bind "_" (var "instr"))
+    (bind "_" (var "functype"))
+  )
+  (rule
+    "nop"
+    (exp "C" (var "context"))
+    "%|-%:%"
+    (tup (var "C") (case "NOP" (tup)) (case "%->%" (tup (list) (list))))
+  )
+  (rule
+    "drop"
+    (exp "C" (var "context"))
+    (exp "t" (var "valtype"))
+    "%|-%:%"
+    (tup
+      (var "C")
+      (case "DROP" (tup))
+      (case "%->%" (tup (list (var "t")) (list)))
+    )
+  )
+  (rule
+    "select"
+    (exp "C" (var "context"))
+    (exp "t" (var "valtype"))
+    "%|-%:%"
+    (tup
+      (var "C")
+      (case "SELECT" (tup))
+      (case
+        "%->%"
+        (tup (list (var "t") (var "t") (case "I32" (tup))) (list (var "t")))
+      )
+    )
+  )
+  (rule
+    "const"
+    (exp "C" (var "context"))
+    (exp "t" (var "valtype"))
+    (exp "c" (var "const"))
+    "%|-%:%"
+    (tup
+      (var "C")
+      (case "CONST" (tup (var "t") (var "c")))
+      (case "%->%" (tup (list) (list (var "t"))))
+    )
+  )
+  (rule
+    "local.get"
+    (exp "C" (var "context"))
+    (exp "x" (var "localidx"))
+    (exp "t" (var "valtype"))
+    "%|-%:%"
+    (tup
+      (var "C")
+      (case "LOCAL.GET" (tup (var "x")))
+      (case "%->%" (tup (list) (list (var "t"))))
+    )
+    (if (cmp eq bool (idx (dot (var "C") "LOCALS") (var "x")) (var "t")))
+  )
+  (rule
+    "local.set"
+    (exp "C" (var "context"))
+    (exp "x" (var "localidx"))
+    (exp "t" (var "valtype"))
+    "%|-%:%"
+    (tup
+      (var "C")
+      (case "LOCAL.SET" (tup (var "x")))
+      (case "%->%" (tup (list (var "t")) (list)))
+    )
+    (if (cmp eq bool (idx (dot (var "C") "LOCALS") (var "x")) (var "t")))
+  )
+  (rule
+    "global.get"
+    (exp "C" (var "context"))
+    (exp "x" (var "globalidx"))
+    (exp "t" (var "valtype"))
+    "%|-%:%"
+    (tup
+      (var "C")
+      (case "GLOBAL.GET" (tup (var "x")))
+      (case "%->%" (tup (list) (list (var "t"))))
+    )
+    (if
+      (cmp
+        eq
+        bool
+        (idx (dot (var "C") "GLOBALS") (var "x"))
+        (case "%%" (tup (iter (case "MUT" (tup)) opt) (var "t")))
+      )
+    )
+  )
+  (rule
+    "global.set"
+    (exp "C" (var "context"))
+    (exp "x" (var "globalidx"))
+    (exp "t" (var "valtype"))
+    "%|-%:%"
+    (tup
+      (var "C")
+      (case "GLOBAL.GET" (tup (var "x")))
+      (case "%->%" (tup (list (var "t")) (list)))
+    )
+    (if
+      (cmp
+        eq
+        bool
+        (idx (dot (var "C") "GLOBALS") (var "x"))
+        (case "%%" (tup (opt (case "MUT" (tup))) (var "t")))
+      )
+    )
+  )
+)
+(typ "addr" (inst (alias nat)))
+(typ "moduleinst" (inst (struct (field "GLOBALS" (iter (var "addr") list)))))
+(typ
+  "val"
+  (inst
+    (variant
+      (case
+        "CONST"
+        (tup (bind "valtype" (var "valtype")) (bind "const" (var "const")))
+      )
+    )
+  )
+)
+(typ "store" (inst (struct (field "GLOBALS" (iter (var "val") list)))))
+(typ
+  "frame"
+  (inst
+    (struct
+      (field "LOCALS" (iter (var "val") list))
+      (field "MODULE" (var "moduleinst"))
+    )
+  )
+)
+(typ
+  "state"
+  (inst
+    (variant
+      (case
+        "%;%"
+        (tup (bind "store" (var "store")) (bind "frame" (var "frame")))
+      )
+    )
+  )
+)
+(typ
+  "config"
+  (inst
+    (variant
+      (case
+        "%;%"
+        (tup
+          (bind "state" (var "state"))
+          (bind "instr*" (iter (var "instr") list))
+        )
+      )
+    )
+  )
+)
+(def
+  "local"
+  (exp "state" (var "state"))
+  (exp "localidx" (var "localidx"))
+  (var "val")
+  (clause
+    (exp "s" (var "store"))
+    (exp "f" (var "frame"))
+    (exp "x" (var "localidx"))
+    (exp (case "%;%" (tup (var "s") (var "f"))))
+    (exp (var "x"))
+    (idx (dot (var "f") "LOCALS") (var "x"))
+  )
+)
+(def
+  "global"
+  (exp "state" (var "state"))
+  (exp "globalidx" (var "globalidx"))
+  (var "val")
+  (clause
+    (exp "s" (var "store"))
+    (exp "f" (var "frame"))
+    (exp "x" (var "globalidx"))
+    (exp (case "%;%" (tup (var "s") (var "f"))))
+    (exp (var "x"))
+    (idx
+      (dot (var "s") "GLOBALS")
+      (idx (dot (dot (var "f") "MODULE") "GLOBALS") (var "x"))
+    )
+  )
+)
+(def
+  "update_local"
+  (exp "state" (var "state"))
+  (exp "localidx" (var "localidx"))
+  (exp "val" (var "val"))
+  (var "state")
+  (clause
+    (exp "s" (var "store"))
+    (exp "f" (var "frame"))
+    (exp "x" (var "localidx"))
+    (exp "v" (var "val"))
+    (exp (case "%;%" (tup (var "s") (var "f"))))
+    (exp (var "x"))
+    (exp (var "v"))
+    (case
+      "%;%"
+      (tup
+        (var "s")
+        (upd (var "f") (idx (dot root "LOCALS") (var "x")) (var "v"))
+      )
+    )
+  )
+)
+(def
+  "update_global"
+  (exp "state" (var "state"))
+  (exp "globalidx" (var "globalidx"))
+  (exp "val" (var "val"))
+  (var "state")
+  (clause
+    (exp "s" (var "store"))
+    (exp "f" (var "frame"))
+    (exp "x" (var "globalidx"))
+    (exp "v" (var "val"))
+    (exp (case "%;%" (tup (var "s") (var "f"))))
+    (exp (var "x"))
+    (exp (var "v"))
+    (case
+      "%;%"
+      (tup
+        (upd
+          (var "s")
+          (idx
+            (dot root "GLOBALS")
+            (idx (dot (dot (var "f") "MODULE") "GLOBALS") (var "x"))
+          )
+          (var "v")
+        )
+        (var "f")
+      )
+    )
+  )
+)
+(rel
+  "Step_pure"
+  "%~>%"
+  (tup
+    (bind "_" (iter (var "instr") list))
+    (bind "_" (iter (var "instr") list))
+  )
+  (rule "nop" "%~>%" (tup (list (case "NOP" (tup))) (list)))
+  (rule
+    "drop"
+    (exp "val" (var "val"))
+    "%~>%"
+    (tup
+      (list (sub (var "val") (var "instr") (var "val")) (case "DROP" (tup)))
+      (list)
+    )
+  )
+  (rule
+    "select-true"
+    (exp "val_1" (var "val"))
+    (exp "val_2" (var "val"))
+    (exp "c" (var "const"))
+    "%~>%"
+    (tup
+      (list
+        (sub (var "val") (var "instr") (var "val_1"))
+        (sub (var "val") (var "instr") (var "val_2"))
+        (case "CONST" (tup (case "I32" (tup)) (var "c")))
+        (case "SELECT" (tup))
+      )
+      (list (sub (var "val") (var "instr") (var "val_1")))
+    )
+    (if (cmp ne bool (var "c") (num (nat 0))))
+  )
+  (rule
+    "select-false"
+    (exp "val_1" (var "val"))
+    (exp "val_2" (var "val"))
+    (exp "c" (var "const"))
+    "%~>%"
+    (tup
+      (list
+        (sub (var "val") (var "instr") (var "val_1"))
+        (sub (var "val") (var "instr") (var "val_2"))
+        (case "CONST" (tup (case "I32" (tup)) (var "c")))
+        (case "SELECT" (tup))
+      )
+      (list (sub (var "val") (var "instr") (var "val_2")))
+    )
+    else
+  )
+)
+(rel
+  "Step"
+  "%~>%"
+  (tup (bind "_" (var "config")) (bind "_" (var "config")))
+  (rule
+    "pure"
+    (exp "z" (var "state"))
+    (exp "instr*" (iter (var "instr") list))
+    (exp "instr'*" (iter (var "instr") list))
+    "%~>%"
+    (tup
+      (case
+        "%;%"
+        (tup (var "z") (iter (var "instr") list (dom "instr" (var "instr*"))))
+      )
+      (case
+        "%;%"
+        (tup
+          (var "z")
+          (iter (var "instr'") list (dom "instr'" (var "instr'*")))
+        )
+      )
+    )
+    (rule
+      "Step_pure"
+      "%~>%"
+      (tup
+        (iter (var "instr") list (dom "instr" (var "instr*")))
+        (iter (var "instr'") list (dom "instr'" (var "instr'*")))
+      )
+    )
+  )
+  (rule
+    "local.get"
+    (exp "z" (var "state"))
+    (exp "x" (var "localidx"))
+    (exp "val" (var "val"))
+    "%~>%"
+    (tup
+      (case "%;%" (tup (var "z") (list (case "LOCAL.GET" (tup (var "x"))))))
+      (case
+        "%;%"
+        (tup (var "z") (list (sub (var "val") (var "instr") (var "val"))))
+      )
+    )
+    (if
+      (cmp eq bool (var "val") (call "local" (exp (var "z")) (exp (var "x"))))
+    )
+  )
+  (rule
+    "local.set"
+    (exp "z" (var "state"))
+    (exp "val" (var "val"))
+    (exp "x" (var "localidx"))
+    (exp "z'" (var "state"))
+    "%~>%"
+    (tup
+      (case
+        "%;%"
+        (tup
+          (var "z")
+          (list
+            (sub (var "val") (var "instr") (var "val"))
+            (case "LOCAL.SET" (tup (var "x")))
+          )
+        )
+      )
+      (case "%;%" (tup (var "z'") (list)))
+    )
+    (if
+      (cmp
+        eq
+        bool
+        (var "z'")
+        (call "update_local" (exp (var "z")) (exp (var "x")) (exp (var "val")))
+      )
+    )
+  )
+  (rule
+    "global.get"
+    (exp "z" (var "state"))
+    (exp "x" (var "globalidx"))
+    (exp "val" (var "val"))
+    "%~>%"
+    (tup
+      (case "%;%" (tup (var "z") (list (case "GLOBAL.GET" (tup (var "x"))))))
+      (case
+        "%;%"
+        (tup (var "z") (list (sub (var "val") (var "instr") (var "val"))))
+      )
+    )
+    (if
+      (cmp eq bool (var "val") (call "global" (exp (var "z")) (exp (var "x"))))
+    )
+  )
+  (rule
+    "global.set"
+    (exp "z" (var "state"))
+    (exp "val" (var "val"))
+    (exp "x" (var "globalidx"))
+    (exp "z'" (var "state"))
+    "%~>%"
+    (tup
+      (case
+        "%;%"
+        (tup
+          (var "z")
+          (list
+            (sub (var "val") (var "instr") (var "val"))
+            (case "GLOBAL.SET" (tup (var "x")))
+          )
+        )
+      )
+      (case "%;%" (tup (var "z'") (list)))
+    )
+    (if
+      (cmp
+        eq
+        bool
+        (var "z'")
+        (call "update_global" (exp (var "z")) (exp (var "x")) (exp (var "val")))
+      )
+    )
+  )
+)
+(def "float" (exp "nat" nat) (exp "_" (iter nat list)) (var "const"))
+(gram
+  "Bbyte"
+  nat
+  (prod
+    (exp "<implicit-prod-result>" nat)
+    (attr (var "<implicit-prod-result>") (range (num 0x00) (num 0xFF)))
+    (var "<implicit-prod-result>")
+  )
+)
+(rec
+  (gram
+    "Bu"
+    (exp "N" nat)
+    nat
+    (prod
+      (exp "n" nat)
+      (attr (var "n") (var "Bbyte"))
+      (var "n")
+      (if
+        (bin
+          and
+          bool
+          (cmp lt nat (var "n") (bin pow nat (num (nat 2)) (num (nat 7))))
+          (cmp lt nat (var "n") (bin pow nat (num (nat 2)) (var "N")))
+        )
+      )
+    )
+    (prod
+      (exp "m" nat)
+      (exp "n" nat)
+      (seq
+        (seq (attr (var "n") (var "Bbyte")))
+        (seq
+          (attr
+            (var "m")
+            (var
+              "Bu"
+              (exp
+                (cvt
+                  int
+                  nat
+                  (bin
+                    sub
+                    int
+                    (cvt nat int (var "N"))
+                    (cvt nat int (num (nat 7)))
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+      (bin
+        add
+        nat
+        (bin mul nat (bin pow nat (num (nat 2)) (num (nat 7))) (var "m"))
+        (cvt
+          int
+          nat
+          (bin
+            sub
+            int
+            (cvt nat int (var "n"))
+            (cvt nat int (bin pow nat (num (nat 2)) (num (nat 7))))
+          )
+        )
+      )
+      (if
+        (bin
+          and
+          bool
+          (cmp ge nat (var "n") (bin pow nat (num (nat 2)) (num (nat 7))))
+          (cmp gt nat (var "N") (num (nat 7)))
+        )
+      )
+    )
+  )
+)
+(gram
+  "Bu32"
+  (var "const")
+  (prod
+    (exp "<implicit-prod-result>" nat)
+    (attr (var "<implicit-prod-result>") (var "Bu" (exp (num (nat 32)))))
+    (var "<implicit-prod-result>")
+  )
+)
+(gram
+  "Bu64"
+  (var "const")
+  (prod
+    (exp "<implicit-prod-result>" nat)
+    (attr (var "<implicit-prod-result>") (var "Bu" (exp (num (nat 64)))))
+    (var "<implicit-prod-result>")
+  )
+)
+(gram
+  "Bf"
+  (exp "N" nat)
+  nat
+  (prod
+    (exp "b*" (iter nat list))
+    (attr
+      (iter (var "b") list (dom "b" (var "b*")))
+      (iter
+        (var "Bbyte")
+        (listn
+          (cvt
+            rat
+            nat
+            (bin div rat (cvt nat rat (var "N")) (cvt nat rat (num (nat 8))))
+          )
+        )
+      )
+    )
+    (call
+      "float"
+      (exp (var "N"))
+      (exp (iter (var "b") list (dom "b" (var "b*"))))
+    )
+  )
+)
+(gram
+  "Bf32"
+  (var "const")
+  (prod
+    (exp "<implicit-prod-result>" nat)
+    (attr (var "<implicit-prod-result>") (var "Bf" (exp (num (nat 32)))))
+    (var "<implicit-prod-result>")
+  )
+)
+(gram
+  "Bf64"
+  (var "const")
+  (prod
+    (exp "<implicit-prod-result>" nat)
+    (attr (var "<implicit-prod-result>") (var "Bf" (exp (num (nat 64)))))
+    (var "<implicit-prod-result>")
+  )
+)
+(gram
+  "Bvaltype"
+  (var "valtype")
+  (prod (num 0x7F) (case "I32" (tup)))
+  (prod (num 0x7E) (case "I64" (tup)))
+  (prod (num 0x7D) (case "F32" (tup)))
+  (prod (num 0x7C) (case "F64" (tup)))
+)
+(gram
+  "Bmut"
+  (iter (var "mut") opt)
+  (prod (num 0x00) (opt))
+  (prod (num 0x01) (opt (case "MUT" (tup))))
+)
+(gram
+  "Bglobaltype"
+  (var "globaltype")
+  (prod
+    (exp "mut" (var "mut"))
+    (exp "t" (var "valtype"))
+    (seq
+      (seq (attr (var "t") (var "Bvaltype")))
+      (seq (attr (opt (var "mut")) (var "Bmut")))
+    )
+    (case "%%" (tup (opt (var "mut")) (var "t")))
+  )
+)
+(gram
+  "Bresulttype"
+  (iter (var "valtype") list)
+  (prod
+    (exp "n" nat)
+    (exp "t*" (iter (var "valtype") list))
+    (seq
+      (seq (attr (var "n") (var "Bu32")))
+      (seq
+        (iter
+          (attr (var "t") (var "Bvaltype"))
+          (listn (var "n"))
+          (dom "t" (var "t*"))
+        )
+      )
+    )
+    (iter (var "t") (listn (var "n")) (dom "t" (var "t*")))
+  )
+)
+(gram
+  "Bfunctype"
+  (var "functype")
+  (prod
+    (exp "t_1*" (iter (var "valtype") list))
+    (exp "t_2*" (iter (var "valtype") list))
+    (seq
+      (seq (num 0x60))
+      (seq
+        (attr
+          (iter (var "t_1") list (dom "t_1" (var "t_1*")))
+          (var "Bresulttype")
+        )
+      )
+      (seq
+        (attr
+          (iter (var "t_2") list (dom "t_2" (var "t_2*")))
+          (var "Bresulttype")
+        )
+      )
+    )
+    (case
+      "%->%"
+      (tup
+        (iter (var "t_1") list (dom "t_1" (var "t_1*")))
+        (iter (var "t_2") list (dom "t_2" (var "t_2*")))
+      )
+    )
+  )
+)
+(gram
+  "Bglobalidx"
+  (var "globalidx")
+  (prod (exp "x" nat) (attr (var "x") (var "Bu32")) (var "x"))
+)
+(gram
+  "Blocalidx"
+  (var "localidx")
+  (prod (exp "x" nat) (attr (var "x") (var "Bu32")) (var "x"))
+)
+(gram
+  "Binstr"
+  (var "instr")
+  (prod (num 0x01) (case "NOP" (tup)))
+  (prod (num 0x1A) (case "DROP" (tup)))
+  (prod (num 0x1B) (case "SELECT" (tup)))
+  (prod
+    (exp "x" nat)
+    (seq (seq (num 0x20)) (seq (attr (var "x") (var "Blocalidx"))))
+    (case "LOCAL.GET" (tup (var "x")))
+  )
+  (prod
+    (exp "x" nat)
+    (seq (seq (num 0x21)) (seq (attr (var "x") (var "Blocalidx"))))
+    (case "LOCAL.SET" (tup (var "x")))
+  )
+  (prod
+    (exp "x" nat)
+    (seq (seq (num 0x23)) (seq (attr (var "x") (var "Bglobalidx"))))
+    (case "GLOBAL.GET" (tup (var "x")))
+  )
+  (prod
+    (exp "x" nat)
+    (seq (seq (num 0x24)) (seq (attr (var "x") (var "Bglobalidx"))))
+    (case "GLOBAL.SET" (tup (var "x")))
+  )
+  (prod
+    (exp "n" nat)
+    (seq (seq (num 0x41)) (seq (attr (var "n") (var "Bu32"))))
+    (case "CONST" (tup (case "I32" (tup)) (var "n")))
+  )
+  (prod
+    (exp "n" nat)
+    (seq (seq (num 0x42)) (seq (attr (var "n") (var "Bu64"))))
+    (case "CONST" (tup (case "I64" (tup)) (var "n")))
+  )
+  (prod
+    (exp "p" nat)
+    (seq (seq (num 0x43)) (seq (attr (var "p") (var "Bf32"))))
+    (case "CONST" (tup (case "F32" (tup)) (var "p")))
+  )
+  (prod
+    (exp "p" nat)
+    (seq (seq (num 0x44)) (seq (attr (var "p") (var "Bf64"))))
+    (case "CONST" (tup (case "F64" (tup)) (var "p")))
+  )
+)
+
