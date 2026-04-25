@@ -17,7 +17,7 @@ pub trait Decode: Sized {
 /// decoders such as `Vec<_>` or `Option<_>` can return success without
 /// consuming input, which must not be interpreted as presence by outer greedy
 /// decoders.
-pub(crate) fn probe_one<'a, T: Decode>(item: &'a sexpr_parse::SExprItem) -> Option<T> {
+pub(crate) fn probe_one<T: Decode>(item: &sexpr_parse::SExprItem) -> Option<T> {
     let mut probe = std::iter::once(item).peekable();
     let out = T::decode(&mut probe).ok()?;
 
