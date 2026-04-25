@@ -219,6 +219,35 @@ mod test {
     }
 
     #[test]
+    fn test_spectec_atom_unnamed_rejects_non_consuming_option_decoder() {
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
+        pub enum TestEnum {
+            #[sexpr_node(name = "a")]
+            A { b: TestAtom },
+        }
+
+        #[derive(SExprDecode, Clone, Debug, PartialEq)]
+        pub enum TestAtom {
+            #[sexpr_atom()]
+            MaybeNum(Option<u64>),
+        }
+
+        let input = "(a bogus)";
+        let sexprs = match parse_sexpr_stream(input) {
+            Ok(p) => p,
+            Err(e) => panic!("{}", e),
+        };
+        let parsed: decode::Result<TestEnum> =
+            decode::Decode::decode(&mut sexprs.iter().peekable());
+
+        assert!(parsed.is_err());
+        assert_eq!(
+            parsed.unwrap_err().to_string(),
+            "Error decoding spectec_ast::test::test_spectec_atom_unnamed_rejects_non_consuming_option_decoder::TestEnum::A.b: Error decoding spectec_ast::test::test_spectec_atom_unnamed_rejects_non_consuming_option_decoder::TestAtom: Unrecognised atom symbol: bogus"
+        );
+    }
+
+    #[test]
     fn test_spectec_node_unnamed_fields() {
         #[derive(SExprDecode, Clone, Debug, PartialEq)]
         pub enum TestEnum {

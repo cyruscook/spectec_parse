@@ -3,7 +3,7 @@ impl<T: crate::Decode> crate::Decode for Option<T> {
         items: &mut std::iter::Peekable<I>,
     ) -> crate::Result<Self> {
         if let Some(item) = items.peek()
-            && let Some(out) = crate::probe_one::<T>(item)
+            && let Some(out) = T::probe_one(item)
         {
             // We know that an item is available due to the success of the peek call
             #[allow(clippy::unwrap_used)]

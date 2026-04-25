@@ -8,22 +8,23 @@ pub trait Decode: Sized {
     fn decode<'a, I: Iterator<Item = &'a sexpr_parse::SExprItem>>(
         items: &mut std::iter::Peekable<I>,
     ) -> crate::Result<Self>;
-}
 
-/// Attempts to decode `T` from a single item and reports success only if `T`
-/// consumed that item completely.
-///
-/// This is stricter than treating any `Ok(T)` as a match: nested greedy
-/// decoders such as `Vec<_>` or `Option<_>` can return success without
-/// consuming input, which must not be interpreted as presence by outer greedy
-/// decoders.
-pub(crate) fn probe_one<T: Decode>(item: &sexpr_parse::SExprItem) -> Option<T> {
-    let mut probe = std::iter::once(item).peekable();
-    let out = T::decode(&mut probe).ok()?;
+    /// Attempts to decode `T` from a single item and reports success only if `T`
+    /// consumed that item completely.
+    ///
+    /// This is stricter than treating any `Ok(T)` as a match: nested greedy
+    /// decoders such as `Vec<_>` or `Option<_>` can return success without
+    /// consuming input, which must not be interpreted as presence by outer greedy
+    /// decoders.
+    #[must_use]
+    fn probe_one(item: &sexpr_parse::SExprItem) -> Option<Self> {
+        let mut probe = std::iter::once(item).peekable();
+        let out = Self::decode(&mut probe).ok()?;
 
-    if probe.peek().is_none() {
-        Some(out)
-    } else {
-        None
+        if probe.peek().is_none() {
+            Some(out)
+        } else {
+            None
+        }
     }
 }

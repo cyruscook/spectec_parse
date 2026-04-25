@@ -51,7 +51,7 @@ fn process_atom(
             } else {
                 let ftype = &unnamed.unnamed.get(0).unwrap().ty;
                 atom_takes_any_name.push(quote!(
-                    if let Ok(out) = <#ftype as decode::Decode>::decode(&mut std::iter::once(&item).peekable()) {
+                    if let Some(out) = <#ftype as decode::Decode>::probe_one(&item) {
                         return Ok(#s_name::#variant_name(out));
                     }
                 ));
