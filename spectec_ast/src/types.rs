@@ -1,6 +1,4 @@
-use crate::{
-    SpecTecArg, SpecTecBind, SpecTecBoolTyp, SpecTecExp, SpecTecIter, SpecTecNumTyp, SpecTecPrem,
-};
+use crate::{SpecTecArg, SpecTecBind, SpecTecBoolTyp, SpecTecIter, SpecTecNumTyp, SpecTecPrem};
 use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L70>
@@ -51,7 +49,7 @@ pub enum SpecTecDefTyp {
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecTypBind {
     #[sexpr_node(name = "bind")]
-    Bind { exp: SpecTecExp, typ: SpecTecTyp },
+    Bind { id: String, typ: SpecTecTyp },
 }
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#92>
