@@ -55,59 +55,59 @@ pub enum SpecTecParam {
     Gram { x: String, t: SpecTecTyp },
 }
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L196>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L186>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecInst {
     #[sexpr_node(name = "inst")]
     Inst {
-        bs: Vec<SpecTecBind>,
+        ps: Vec<SpecTecParam>,
         as_: Vec<SpecTecArg>,
         dt: SpecTecDefTyp,
     },
 }
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L201>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L191>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecRule {
     #[sexpr_node(name = "rule")]
     Rule {
         x: String,
-        bs: Vec<SpecTecBind>,
+        ps: Vec<SpecTecParam>,
         op: MixOp,
         e: SpecTecExp,
         prs: Vec<SpecTecPrem>,
     },
 }
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L206>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L196>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecClause {
     #[sexpr_node(name = "clause")]
     Clause {
-        bs: Vec<SpecTecBind>,
+        ps: Vec<SpecTecParam>,
         as_: Vec<SpecTecArg>,
         e: SpecTecExp,
         prs: Vec<SpecTecPrem>,
     },
 }
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L211>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L201>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecProd {
     #[sexpr_node(name = "prod")]
     Prod {
-        bs: Vec<SpecTecBind>,
+        ps: Vec<SpecTecParam>,
         g: SpecTecSym,
         e: SpecTecExp,
         prs: Vec<SpecTecPrem>,
     },
 }
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L216>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L206>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecDef {
@@ -120,6 +120,7 @@ pub enum SpecTecDef {
     #[sexpr_node(name = "rel")]
     Rel {
         x: String,
+        ps: Vec<SpecTecParam>,
         op: MixOp,
         t: SpecTecTyp,
         rules: Vec<SpecTecRule>,

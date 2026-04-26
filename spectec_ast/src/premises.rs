@@ -1,12 +1,17 @@
 use crate::{MixOp, SpecTecExp, SpecTecIter, SpecTecIterExp};
 use decode_derive::SExprDecode;
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L164>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L161>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecPrem {
     #[sexpr_node(name = "rule")]
-    Rule { x: String, op: MixOp, e: SpecTecExp },
+    Rule {
+        x: String,
+        as1: Vec<crate::SpecTecArg>,
+        op: MixOp,
+        e: SpecTecExp,
+    },
     #[sexpr_node(name = "if")]
     If { e: SpecTecExp },
     #[sexpr_node(name = "let")]

@@ -338,7 +338,7 @@ mod test {
                 x: "M".to_string(),
                 ps: vec![],
                 insts: vec![SpecTecInst::Inst {
-                    bs: vec![],
+                    ps: vec![],
                     as_: vec![],
                     dt: SpecTecDefTyp::Alias {
                         typ: SpecTecTyp::Num(SpecTecNumTyp::Nat),
@@ -364,7 +364,7 @@ mod test {
                 SpecTecDef::Typ {
                     x: "m".to_string(),
                     insts: vec![SpecTecInst::Inst {
-                        bs: vec![],
+                        ps: vec![],
                         as_: vec![],
                         dt: SpecTecDefTyp::Alias {
                             typ: SpecTecTyp::Num(SpecTecNumTyp::Nat),
@@ -375,7 +375,7 @@ mod test {
                 SpecTecDef::Typ {
                     x: "n".to_string(),
                     insts: vec![SpecTecInst::Inst {
-                        bs: vec![],
+                        ps: vec![],
                         as_: vec![],
                         dt: SpecTecDefTyp::Alias {
                             typ: SpecTecTyp::Num(SpecTecNumTyp::Nat),

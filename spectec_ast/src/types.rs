@@ -1,4 +1,4 @@
-use crate::{SpecTecArg, SpecTecBind, SpecTecBoolTyp, SpecTecIter, SpecTecNumTyp, SpecTecPrem};
+use crate::{SpecTecArg, SpecTecBoolTyp, SpecTecIter, SpecTecNumTyp, SpecTecPrem};
 use decode_derive::SExprDecode;
 
 /// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#L70>
@@ -52,28 +52,28 @@ pub enum SpecTecTypBind {
     Bind { id: String, typ: SpecTecTyp },
 }
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#92>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L89>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecTypField {
     #[sexpr_node(name = "field")]
     Field {
         at: crate::literal::MixOp,
-        bs: Vec<SpecTecBind>,
         t: SpecTecTyp,
+        qs: Vec<crate::SpecTecParam>,
         prs: Vec<SpecTecPrem>,
     },
 }
 
-/// <https://github.com/WebAssembly/spec/blob/9479f1d0760494a93fcc73f7cf94c211ac91eec7/spectec/src/backend-ast/print.ml#95>
+/// <https://github.com/WebAssembly/spec/blob/d7b678327cd370cdbc5acfa94bd108772e2bef68/spectec/src/backend-ast/print.ml#L92>
 #[allow(unused)]
 #[derive(SExprDecode, Clone, Debug, PartialEq)]
 pub enum SpecTecTypCase {
     #[sexpr_node(name = "case")]
     Field {
         op: crate::literal::MixOp,
-        bs: Vec<SpecTecBind>,
         t: SpecTecTyp,
+        qs: Vec<crate::SpecTecParam>,
         prs: Vec<SpecTecPrem>,
     },
 }
