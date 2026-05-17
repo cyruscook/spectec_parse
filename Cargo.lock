@@ -30,6 +30,8 @@ dependencies = [
 [[package]]
 name = "sexpr_parse"
 version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53a7ecfcada22f5fa61f887fe00adacb87dfd6ee8e4e968cc8e5a9ce6694f9fa"
 dependencies = [
  "thiserror",
 ]
