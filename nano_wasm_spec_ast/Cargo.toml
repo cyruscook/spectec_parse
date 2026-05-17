@@ -1,7 +1,7 @@
 [package]
 name = "nano_wasm_spec_ast"
 description = "The NanoWasm spec as a SpecTec AST"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2024"
 authors = ["cyruscook"]
 repository = "https://github.com/cyruscook/spectec_parse"
@@ -9,4 +9,4 @@ license = "BSD-3-Clause"
 keywords = ["nanowasm", "spectec"]
 
 [dependencies]
-spectec_ast = { version = "1.0.0", path = "../spectec_ast" }
+spectec_ast = { version = "2.0.0", path = "../spectec_ast" }
